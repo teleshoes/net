@@ -1,0 +1,44 @@
+Copyright 2011 Elliot Wolk
+Licensed under GPLv3
+
+Network Utility Belt
+
+collection of scripts that interface with:
+  ifconfig dhclient wpa_supplicant
+  iwconfig iwlist iwscan wvdial pppd
+
+to accomplish the basic goal of:
+  managing wifi, wired, and hspa{tethered} internet connections via the cmdline
+
+can currently:
+1) list available wifi networks prettily
+user:~$ wscan
+MBY30                | 72%  | WEP  | [1]  
+NETGEAR              | 60%  | WPA2 |      
+APPpleSauce          | 77%  | WPA2 | [2]  
+
+
+2) connect to unencrypted, wep, and wpa/wpa2 wifi networks
+user:~$ wconnect MBY30 wep deadbeef09
+ exec: wdisconnect
+ exec: ifconfig wlan0
+ exec: iwconfig wlan0 essid MBY30 key deadbeef09 channel auto
+ exec: resolvchooser default
+ exec: dhclient -d wlan0
+
+or
+
+user:$ echo '(["linksys", "WPA2", "password141j158"])' > ~/wifi.conf
+user:~$ wconnect liNkSys
+ preconfigured network, case changed to: linksys
+ exec: wdisconnect
+ exec: ifconfig wlan0 up
+ exec: wpa_supplicant -Dwext -iwlan0 -c/tmp/wpa_supplicant.conf
+ exec: sleep 1
+ exec: resolvchooser default
+ exec: dhclient -d wlan0
+
+
+3) tether an n900 with wvdial
+user:~$ n900-tether on
+

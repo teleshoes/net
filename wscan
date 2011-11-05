@@ -1,0 +1,94 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @networks;
+my $wifiConf = "$ENV{HOME}/wifi.conf";
+if(-e $wifiConf){
+  use Safe;
+  my $unsafeCode = `cat $wifiConf`;
+  @networks = new Safe() -> reval($unsafeCode);
+}
+
+my $lastScanFile = "/tmp/wscan-last";
+my $dev = `wlandev`;
+chomp $dev;
+
+sub parseCell($);
+sub trimPad($$);
+
+sub main(@){
+  my $iwlist;
+  if(@_ == 0){
+    $iwlist = `sudo iwlist $dev scan`;
+    if($? != 0){
+      exit 1;
+    }
+    if($iwlist =~ s/^$dev\s*Scan completed :\n//){
+      open FH, "> $lastScanFile";
+      print FH $iwlist;
+      close FH;
+    }
+  }elsif(@_ == 1 and $_[0] eq '-l'){
+    $iwlist = `cat $lastScanFile`;
+  }else{
+    die "Usage: $0   or  $0 -l\n";
+  }
+
+  my @cells = split /          Cell \d+ - /, $iwlist;
+  shift @cells;
+
+  for my $cell(map {parseCell $_} @cells){
+    my $foundStr = '';
+    for my $network(@networks){
+      my $essid = $$network[0];
+      if($$cell{SSID} eq $essid){
+        $foundStr = "[$$network[3]]";
+        last;
+      }
+    }
+    print trimPad($$cell{SSID},       20) . " | " .
+          trimPad($$cell{QUALITY},     4) . " | " .
+          trimPad($$cell{ENCRYPTION},  4) . " | " .
+          trimPad($foundStr, 5) . "\n";
+  }
+}
+
+
+
+
+sub parseCell($){
+  my $cell = shift;
+  $cell =~ /\s*ESSID:"(.*)"/;
+  my $essid = $1;
+  $cell =~ /\s*Quality=(\d+)\/(\d+)/;
+  my $quality = $2 == 0 ? '?' : int($1*100/$2)."%";
+  $cell =~ /\s*Encryption key:(.*)/;
+  my $enc = '?';
+  if($1 eq 'on'){
+    if($cell =~ /WPA2/){
+      $enc = 'WPA2';
+    }elsif($cell =~ /WPA/){
+      $enc = 'WPA';
+    }else{
+      $enc = 'WEP';
+    }
+  }else{
+    $enc = 'NONE';
+  }
+  return {
+    SSID => $essid,
+    QUALITY => $quality,
+    ENCRYPTION => $enc,
+  };
+}
+
+sub trimPad($$){
+  my ($s, $l) = @_;
+  if(length $s > $l){
+    $s = substr($s, 0, $l-2) . "^^";
+  }
+  return $s . ' 'x($l - length $s);
+}
+
+&main(@ARGV);

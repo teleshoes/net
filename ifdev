@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $dev = shift() || '';
+if(not $dev){
+  die "Usage: $0 devname
+     finds the first device named 'devname#' and prints it\n";
+}
+
+my @ifconfig = `ifconfig -a`;
+
+for my $line(@ifconfig){
+  if($line =~ /^($dev\d+) /){
+    print "$1\n";
+    exit 0;
+  }
+}
+exit 1;
