@@ -3,14 +3,23 @@ use strict;
 use warnings;
 
 my $wpaConf = '/tmp/wpa_supplicant.conf';
-my $wifiConf = "$ENV{HOME}/wifi.conf";
+$ENV{PATH}='/bin:/usr/bin:/usr/local/bin:/sbin:/usr/local/sbin';
+my $home = $ENV{HOME};
+$home =~ /^([a-zA-Z0-9_\-\/]+)$/;
+$home = $1;
+my $wifiConf = "$home/wifi.conf";
 
 my $dev = `ifdev wlan`;
-chomp $dev;
+$dev =~ /(wlan\d+)/;
+$dev = $1;
+
+my $justDisconnect = 0;
 
 my ($list, $ssid, $encMode, $key);
 if(@ARGV == 1 and $ARGV[0] eq '--list'){
   $list = 1;
+}elsif(@ARGV == 1 and $ARGV[0] eq '-d'){
+  $justDisconnect = 1;
 }else{
   $list = 0;
   $ssid = shift;
@@ -20,9 +29,12 @@ if(@ARGV == 1 and $ARGV[0] eq '--list'){
 
 my @networks;
 if(-e $wifiConf){
-  use Safe;
   my $unsafeCode = `cat $wifiConf`;
+  $unsafeCode =~ /(.*)/s;
+  $unsafeCode = $1;
+  use Safe;
   @networks = new Safe() -> reval($unsafeCode);
+  no Safe;
 }
 
 if($list){
@@ -35,6 +47,7 @@ if($list){
 if(defined $ssid and (not defined $encMode or not defined $key)){
   for my $network(@networks){
     if($ssid eq $$network[0]){
+      print "preconfigured network\n";
       $encMode = $$network[1];
       $key = $$network[2];
       last;
@@ -45,7 +58,7 @@ if(defined $ssid and (not defined $encMode or not defined $key)){
   for my $network(@networks){
     if(lc $ssid eq lc $$network[0]){
       $ssid = $$network[0];
-      print "Changed SSID case to: $ssid\n";
+      print "preconfigured network, case changed to $ssid\n";
       $encMode = $$network[1];
       $key = $$network[2];
       last;
@@ -58,6 +71,17 @@ if(not defined $encMode or not defined $key){
   $key = '';
 }
 
+
+my $amRoot = `whoami` eq "root\n";
+sub runsudo(@){
+  @_ = ('sudo', @_) if not $amRoot;
+  print "exec: " . join(' ', @_) . "\n";
+  system @_;
+}
+
+runsudo "killall", "wpa_supplicant", "dhclient";
+exit 0 if $justDisconnect;
+
 if(not defined $ssid or $encMode !~ /^(WPA|WPA2|WEP|NONE)$/){
   die "Usage:
     $0 <SSID> [WPA|WPA2|WEP|NONE] [key]
@@ -65,14 +89,6 @@ if(not defined $ssid or $encMode !~ /^(WPA|WPA2|WEP|NONE)$/){
   ";
 }
 
-
-sub systemp(@){
-  print join(' ', @_) . "\n";
-  system @_;
-}
-
-
-systemp "sudo wdisconnect";
 
 if($encMode eq 'WPA' or $encMode eq 'WPA2'){
   my $conf = "network={
@@ -82,16 +98,16 @@ if($encMode eq 'WPA' or $encMode eq 'WPA2'){
   open FH, "> $wpaConf";
   print FH $conf;
   close FH;
-  systemp "sudo ifconfig $dev up";
-  systemp "sudo wpa_supplicant -Dwext -i$dev -c$wpaConf &";
-  sleep 1;
+  runsudo "ifconfig", $dev, "up";
+  runsudo "wpa_supplicant", "-B", "-Dwext", "-i$dev", "-c$wpaConf";
+  runsudo "sleep", "1";
 }elsif($encMode eq 'WEP'){
-  systemp "sudo ifconfig $dev up";
-  systemp "sudo iwconfig $dev essid $ssid key $key channel auto";
+  runsudo "ifconfig", $dev, "up";
+  runsudo "iwconfig", $dev, "essid", $ssid, "key", $key, "channel", "auto";
 }elsif($encMode eq 'NONE'){
-  systemp "sudo ifconfig $dev up";
-  systemp "sudo iwconfig $dev essid $ssid channel auto";
+  runsudo "ifconfig", $dev, "up";
+  runsudo "iwconfig", $dev, "essid", $ssid, "channel", "auto";
 }
 
-systemp "sudo resolvchooser google";
-systemp "sudo dhclient -d $dev &";
+runsudo "resolvchooser", "default";
+runsudo "dhclient", "$dev";
