@@ -11,7 +11,7 @@ if(-e $wifiConf){
 }
 
 my $lastScanFile = "/tmp/wscan-last";
-my $dev = `wlandev`;
+my $dev = `ifdev wlan`;
 chomp $dev;
 
 sub parseCell($);
