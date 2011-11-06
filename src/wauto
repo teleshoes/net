@@ -1,0 +1,93 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $lastActionFile = '/tmp/wauto_last_action';
+my $cmd = shift() || '';
+
+sub readAction(){
+  my $lastAction = 'none';
+  if(-e $lastActionFile){
+    $lastAction = `cat $lastActionFile`;
+    chomp $lastAction;
+  }
+  return $lastAction;
+}
+sub writeAction($){
+  if(readAction() eq 'stopauto'){
+    die "<auto stopped>\n";
+  }
+  my $action = shift;
+  system "echo $action > $lastActionFile";
+  system "chmod 777 $lastActionFile > /dev/null";
+}
+
+sub autoConnect(){
+  print "scanning\n";
+  my @scans = `wscan`;
+  my $maxSSID = '';
+  my $maxAuto = 0;
+  for my $scan(@scans){
+    if($scan =~ /([^\|]*) \| [^\|]* \| [^\|]* \| \[(\d+)\]/){
+      if($2 > 0){
+        if($2 > $maxAuto){
+          $maxAuto = $2;
+          $maxSSID = $1;
+        }
+      }
+    }
+  }
+  if($maxSSID){
+    $maxSSID =~ s/\s*$//;
+    print "decided upon: $maxSSID\n";
+    writeAction 'stopauto';
+    system "wconnect $maxSSID";
+    system "rm $lastActionFile";
+    writeAction 'wifi-connect';
+  }
+}
+
+if($cmd =~ /-a|--action/ and @ARGV == 1){
+  my $action = shift;
+  $action = lc $action;
+  my @validActions = qw(
+    wifi-connect   wifi-disconnect
+    ppp-connect    ppp-disconnect
+    wired-connect  wired-disconnect
+  );
+  my %isValid = map {$_ => 1} @validActions;
+  if(not $isValid{$action}){
+    die "Invalid action: $action
+      Valid actions:\n@validActions\n";
+  }
+  writeAction($action);
+}elsif($cmd =~ /-s|--stopauto/){
+  writeAction 'stopauto';
+}elsif($cmd =~ /-r|--resumeauto/){
+  system "rm $lastActionFile";
+}elsif($cmd =~ /-g|--get/){
+  my $lastAction = readAction();
+  if($lastAction eq 'stopauto'){
+    print "no auto\n";
+  }elsif($lastAction =~ /^(none|wifi-connect)$/){
+    print "auto\n";
+  }else{
+    print "on purpose\n";
+  }
+}elsif($cmd =~ /-c|--connect/){
+  my $lastAction = readAction();
+  if($lastAction =~ /^(none|wifi-connect)$/){
+    print "gonna auto\n";
+    autoConnect();
+  }else{
+    die "cant auto: last action='$lastAction'\n";
+  }
+}else{
+  die "Usage:
+    $0 -a|--action cmd
+    $0 -s|--stopauto
+    $0 -r|--resumeauto
+    $0 -g|--get
+    $0 -c|--connect
+    \n";
+}

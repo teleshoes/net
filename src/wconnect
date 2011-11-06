@@ -80,7 +80,12 @@ sub runsudo(@){
 }
 
 runsudo "killall", "wpa_supplicant", "dhclient";
-exit 0 if $justDisconnect;
+if($justDisconnect){
+  system "wauto --action wifi-disconnect";
+  exit 0;
+}
+
+runsudo "n900-tether", "off";
 
 if(not defined $ssid or $encMode !~ /^(WPA|WPA2|WEP|NONE)$/){
   die "Usage:
@@ -111,3 +116,4 @@ if($encMode eq 'WPA' or $encMode eq 'WPA2'){
 
 runsudo "resolvchooser", "default";
 runsudo "dhclient", "$dev";
+runsudo "wauto", "--action", "wifi-connect";
