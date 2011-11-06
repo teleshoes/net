@@ -20,6 +20,7 @@ sub trimPad($$);
 sub main(@){
   my $iwlist;
   if(@_ == 0){
+    system "sudo ifconfig $dev up";
     $iwlist = `sudo iwlist $dev scan`;
     if($? != 0){
       exit 1;
