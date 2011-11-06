@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+system "echo `date`: $0 @ARGV >> /tmp/wauto_log";
+
 my $lastActionFile = '/tmp/wauto_last_action';
 my $cmd = shift() || '';
 
@@ -23,27 +25,31 @@ sub writeAction($){
 }
 
 sub autoConnect(){
-  print "scanning\n";
-  my @scans = `wscan`;
-  my $maxSSID = '';
-  my $maxAuto = 0;
-  for my $scan(@scans){
-    if($scan =~ /([^\|]*) \| [^\|]* \| [^\|]* \| \[(\d+)\]/){
-      if($2 > 0){
-        if($2 > $maxAuto){
-          $maxAuto = $2;
-          $maxSSID = $1;
+  writeAction 'stopauto';
+  while(1){
+    print "scanning\n";
+    my @scans = `wscan`;
+    my $maxSSID = '';
+    my $maxAuto = 0;
+    for my $scan(@scans){
+      if($scan =~ /([^\|]*) \| [^\|]* \| [^\|]* \| \[(\d+)\]/){
+        if($2 > 0){
+          if($2 > $maxAuto){
+            $maxAuto = $2;
+            $maxSSID = $1;
+          }
         }
       }
     }
-  }
-  if($maxSSID){
-    $maxSSID =~ s/\s*$//;
-    print "decided upon: $maxSSID\n";
-    writeAction 'stopauto';
-    system "wconnect $maxSSID";
-    system "rm $lastActionFile";
-    writeAction 'wifi-connect';
+    if($maxSSID){
+      $maxSSID =~ s/\s*$//;
+      print "decided upon: $maxSSID\n";
+      system "sudo wconnect $maxSSID";
+      system "rm $lastActionFile";
+      writeAction 'wifi-connect';
+      exit 0;
+    }
+    sleep 120;
   }
 }
 
