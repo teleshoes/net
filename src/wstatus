@@ -11,6 +11,12 @@ for my $dev(@devs){
   my $device = `ifdev $dev`;
   chomp $device;
   if($? == 0 and $netstat =~ /^$device /m){
+    if($dev eq 'wlan'){
+      my $iwconfig = `iwconfig $device`;
+      if($iwconfig =~ /ESSID:off\/any\s*$/m){
+        next;
+      }
+    }
     print "$dev\n";
     exit 0;
   }
