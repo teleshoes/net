@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+my $retryTimeout = 60;
+
 system "echo `date`: $0 @ARGV >> /tmp/wauto_log";
 
 my $lastActionFile = '/tmp/wauto_last_action';
@@ -9,7 +11,7 @@ my $cmd = shift() || '';
 
 sub notifyOSD($){
   my $msg = shift;
-  system "notify-send", "wifi: $msg";
+  system "notify-send", "wifi - wauto", "$msg";
 }
 
 sub readAction(){
@@ -31,6 +33,7 @@ sub writeAction($){
 
 sub autoConnect(){
   writeAction 'stopauto';
+  sleep 1;
   notifyOSD "Starting auto-connect";
   while(1){
     my @scans = `wscan`;
@@ -55,7 +58,7 @@ sub autoConnect(){
       writeAction 'wifi-connect';
       exit 0;
     }
-    sleep 120;
+    sleep $retryTimeout;
     my $lastAction = readAction();
     if($lastAction ne 'stopauto'){
       notifyOSD "Stopping auto-connect";
