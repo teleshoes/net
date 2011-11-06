@@ -2,6 +2,8 @@
 use strict;
 use warnings;
 
+my $USE_NETWORK_MANAGER = 0;
+
 my $DEV = '/dev/ttyACM0';
 my $CONFIG = "$ENV{HOME}/wvdial.conf";
 
@@ -26,7 +28,7 @@ if($arg eq 'toggle'){
 my $peerFile = '/etc/ppp/peers/wvdial';
 
 if($arg eq 'on'){
-  print "Turning tethering ON and wifi/NetworkManager OFF\n";
+  print "tethering ON and wifi off\n";
   my @lines = `cat $peerFile`;
   for my $line(@lines){
     $line =~ s/^usepeerdns\n?$//;
@@ -35,12 +37,14 @@ if($arg eq 'on'){
   print FH @lines;
   close FH;
   system 'killall', '-9', 'pppd', 'wvdial';
-  system "initctl stop network-manager";
+  system "initctl stop network-manager" if $USE_NETWORK_MANAGER;
   system "resolvChooser default";
-  system "wdisconnect";
+  system "wconnect -d";
   system 'wvdial', '-C', $CONFIG;
+  system "wauto --action ppp-connect";
 }elsif($arg eq 'off'){
-  print "Turning tethering OFF and NetworkManager ON\n";
-  system "initctl start network-manager";
+  print "tethering OFF and wifi on\n";
+  system "initctl start network-manager" if $USE_NETWORK_MANAGER;
   system 'killall', '-9', 'pppd', 'wvdial';
+  system "wauto --action ppp-disconnect";
 }
