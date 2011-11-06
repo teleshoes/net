@@ -50,6 +50,10 @@ sub autoConnect(){
       exit 0;
     }
     sleep 120;
+    my $lastAction = readAction();
+    if($lastAction !~ /^(none|wifi-connect)$/){
+      die "Gave up making connection, lastaction = $lastAction\n";
+    }
   }
 }
 
