@@ -15,7 +15,8 @@ $dev = $1;
 
 my $justDisconnect = 0;
 
-my ($list, $ssid, $encMode, $key);
+my ($list, $ssid, $encType, $key, $mode);
+$mode = 'Managed';
 if(@ARGV == 1 and $ARGV[0] eq '--list'){
   $list = 1;
 }elsif(@ARGV == 1 and $ARGV[0] eq '-d'){
@@ -23,7 +24,7 @@ if(@ARGV == 1 and $ARGV[0] eq '--list'){
 }else{
   $list = 0;
   $ssid = shift;
-  $encMode = shift;
+  $encType = shift;
   $key = shift;
 }
 
@@ -44,30 +45,32 @@ if($list){
   exit 0;
 }
 
-if(defined $ssid and (not defined $encMode or not defined $key)){
+if(defined $ssid and (not defined $encType or not defined $key)){
   for my $network(@networks){
     if($ssid eq $$network[0]){
       print "preconfigured network\n";
-      $encMode = $$network[1];
+      $encType = $$network[1];
       $key = $$network[2];
+      $mode = $$network[4] if @$network > 4;
       last;
     }
   }
 }
-if(defined $ssid and (not defined $encMode or not defined $key)){
+if(defined $ssid and (not defined $encType or not defined $key)){
   for my $network(@networks){
     if(lc $ssid eq lc $$network[0]){
       $ssid = $$network[0];
       print "preconfigured network, case changed to $ssid\n";
-      $encMode = $$network[1];
+      $encType = $$network[1];
       $key = $$network[2];
+      $mode = $$network[4] if @$network > 4;
       last;
     }
   }
 }
 
-if(not defined $encMode or not defined $key){
-  $encMode = 'NONE';
+if(not defined $encType or not defined $key){
+  $encType = 'NONE';
   $key = '';
 }
 
@@ -87,7 +90,7 @@ if($justDisconnect){
 
 runsudo "n900-tether", "off";
 
-if(not defined $ssid or $encMode !~ /^(WPA|WPA2|WEP|NONE)$/){
+if(not defined $ssid or $encType !~ /^(WPA|WPA2|WEP|NONE)$/){
   die "Usage:
     $0 <SSID> [WPA|WPA2|WEP|NONE] [key]
     $0 --list
@@ -95,7 +98,7 @@ if(not defined $ssid or $encMode !~ /^(WPA|WPA2|WEP|NONE)$/){
 }
 
 
-if($encMode eq 'WPA' or $encMode eq 'WPA2'){
+if($encType eq 'WPA' or $encType eq 'WPA2'){
   my $conf = "network={
        ssid=\"$ssid\"
        psk=\"$key\"
@@ -106,12 +109,20 @@ if($encMode eq 'WPA' or $encMode eq 'WPA2'){
   runsudo "ifconfig", $dev, "up";
   runsudo "wpa_supplicant", "-B", "-Dwext", "-i$dev", "-c$wpaConf";
   runsudo "sleep", "1";
-}elsif($encMode eq 'WEP'){
+}elsif($encType eq 'WEP'){
   runsudo "ifconfig", $dev, "up";
-  runsudo "iwconfig", $dev, "essid", $ssid, "key", $key, "channel", "auto";
-}elsif($encMode eq 'NONE'){
+  runsudo "iwconfig", $dev,
+    "essid", $ssid,
+    "key", $key,
+    "channel", "auto",
+    "mode", $mode;
+}elsif($encType eq 'NONE'){
   runsudo "ifconfig", $dev, "up";
-  runsudo "iwconfig", $dev, "essid", $ssid, "channel", "auto";
+  runsudo "iwconfig", $dev,
+    "essid", $ssid,
+    "key", $key,
+    "channel", "auto",
+    "mode", $mode;
 }
 
 runsudo "resolvchooser", "default";
