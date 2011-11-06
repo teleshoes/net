@@ -29,10 +29,33 @@ sub main(@){
       print FH $iwlist;
       close FH;
     }
+  }elsif(@_ == 2 and $_[0] eq '-r' and $_[1] =~ /^\d+$/){
+    my $delay = $_[1];
+    my $scanDate = 0;
+    if(-e $lastScanFile){
+      $scanDate = `stat --format %Y $lastScanFile`;
+      chomp $scanDate;
+      $scanDate = 0 if not $scanDate =~ /^\d+$/;
+    }
+    my $now = `date +%s`;
+    my $elapsed = $now - $scanDate;
+    if($elapsed > $delay){
+      print "wscan is out of date, rescanning\n";
+      exec $0;
+    }else{
+      print "wscan is only $elapsed seconds old, skipping\n";
+    }
+    exit 0;
   }elsif(@_ == 1 and $_[0] eq '-l'){
     $iwlist = `cat $lastScanFile`;
   }else{
-    die "Usage: $0   or  $0 -l\n";
+    die "Usage:
+      $0
+        perform a scan immediately
+      $0 -l
+        print results of last scan as if just invoked
+      $0 -r  <delay>
+        perform a scan only if last scan is delay seconds old\n";
   }
 
   my @cells = split /          Cell \d+ - /, $iwlist;
