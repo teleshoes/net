@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 my $netstat = `ifconfig -s`;
+my $lastActionFile = '/tmp/net_action';
 
 my @devs = qw(ppp eth wlan);
 
@@ -11,6 +12,9 @@ for my $dev(@devs){
   chomp $device;
   if($? == 0 and $netstat =~ /^$device /m){
     print "$dev\n";
+    exit 0;
   }
 }
 
+print "none\n";
+exit 0;
