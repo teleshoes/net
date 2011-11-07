@@ -120,7 +120,6 @@ if($encType eq 'WPA' or $encType eq 'WPA2'){
   runsudo "ifconfig", $dev, "up";
   runsudo "iwconfig", $dev,
     "essid", $ssid,
-    "key", $key,
     "channel", "auto",
     "mode", $mode;
 }
