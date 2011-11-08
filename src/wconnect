@@ -99,12 +99,15 @@ if(not defined $ssid or $encType !~ /^(WPA|WPA2|WEP|NONE)$/){
 
 
 if($encType eq 'WPA' or $encType eq 'WPA2'){
-  my $conf = "network={
-       ssid=\"$ssid\"
-       psk=\"$key\"
-  }\n";
+  my $conf = ''
+       . "network={\n"
+       . "  ssid=\"$ssid\"\n"
+       . "  psk=\"$key\"\n"
+       . "}\n"
+       ;
   runsudo "rm", $wpaConf;
-  open FH, "> $wpaConf";
+  print "writing $wpaConf:\n$conf\n";
+  open FH, "> $wpaConf" or die "Couldn't write $wpaConf: $!\n";
   print FH $conf;
   close FH;
   runsudo "ifconfig", $dev, "up";
