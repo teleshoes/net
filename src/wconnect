@@ -103,7 +103,7 @@ if($encType eq 'WPA' or $encType eq 'WPA2'){
        ssid=\"$ssid\"
        psk=\"$key\"
   }\n";
-  runsudo "rm $wpaConf";
+  runsudo "rm", $wpaConf;
   open FH, "> $wpaConf";
   print FH $conf;
   close FH;
