@@ -125,7 +125,7 @@ sub parseCell($){
 sub trimPad($$){
   my ($s, $l) = @_;
   if(length $s > $l){
-    $s = substr($s, 0, $l-2) . "^^";
+    $s = substr($s, 0, $l-2) . "..";
   }
   return $s . ' 'x($l - length $s);
 }
