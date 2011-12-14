@@ -17,6 +17,17 @@ chomp $dev;
 sub parseCell($);
 sub trimPad($$);
 
+sub cellSort($$){
+  my ($a, $b) = @_;
+  return 
+    $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
+    or
+    ($$b{QUALITY}=~/(\d+)/)[0] <=> ($$a{QUALITY}=~/(\d+)/)[0]
+    or
+    $$a{SSID} cmp $$b{SSID}
+  ;
+}
+
 sub main(@){
   my $iwlist;
   if(@_ == 0){
@@ -64,11 +75,7 @@ sub main(@){
 
   my @parsedCells = map {parseCell $_} @cells;
 
-  @parsedCells = sort {
-    $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
-    or
-    $$a{SSID} cmp $$b{SSID}
-  } @parsedCells;
+  @parsedCells = sort {cellSort $a, $b} @parsedCells;
 
   for my $cell(@parsedCells){
     my $foundStr = '';
