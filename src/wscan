@@ -62,7 +62,15 @@ sub main(@){
   my @cells = split /          Cell \d+ - /, $iwlist;
   shift @cells;
 
-  for my $cell(map {parseCell $_} @cells){
+  my @parsedCells = map {parseCell $_} @cells;
+
+  @parsedCells = sort {
+    $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
+    or
+    $$a{SSID} cmp $$b{SSID}
+  } @parsedCells;
+
+  for my $cell(@parsedCells){
     my $foundStr = '';
     for my $network(@networks){
       my $essid = $$network[0];
