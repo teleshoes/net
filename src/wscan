@@ -19,13 +19,14 @@ sub trimPad($$);
 
 sub cellSort($$){
   my ($a, $b) = @_;
-  return 
-    $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
-    or
-    ($$b{QUALITY}=~/(\d+)/)[0] <=> ($$a{QUALITY}=~/(\d+)/)[0]
-    or
-    $$a{SSID} cmp $$b{SSID}
-  ;
+  my $ret;
+  $ret = $$a{ENCRYPTION} cmp $$b{ENCRYPTION};
+  return $ret if $ret != 0;
+  $ret = ($$b{QUALITY}=~/(\d+)/g)[0] <=> ($$a{QUALITY}=~/(\d+)/g)[0];
+  return $ret if $ret != 0;
+  $ret = $$a{SSID} cmp $$b{SSID};
+  return $ret if $ret != 0;
+  return 0;
 }
 
 sub main(@){
