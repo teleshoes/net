@@ -19,7 +19,7 @@ my $SSID_IPS = {
   flipsafad => '192.168.11.51',
   minerva => $MOBILE_HOTSPOT_IP,
   mobilehotspot => $MOBILE_HOTSPOT_IP,
-  jimbo => '192.168.2.8',
+  jimbo => '192.168.2.13',
 };
 
 my $usage = "Usage:
