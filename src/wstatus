@@ -17,8 +17,10 @@ for my $dev(@devs){
         next;
       }
     }
-    print "$dev\n";
-    exit 0;
+    if(`ifconfig $device` =~ /inet addr/){
+      print "$dev\n";
+      exit 0;
+    }
   }
 }
 
