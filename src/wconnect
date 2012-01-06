@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
 $ENV{PATH}='/bin:/usr/bin:/usr/local/bin:/sbin:/usr/local/sbin';
 my $home = $ENV{HOME};
@@ -111,7 +112,7 @@ if($encType eq 'WPA' or $encType eq 'WPA2'){
   print FH $conf;
   close FH;
   runsudo "ifconfig", $dev, "up";
-  runsudo "wpa_supplicant", "-B", "-Dwext", "-i$dev", "-c$wpaConf";
+  runsudo "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
   runsudo "sleep", "1";
 }elsif($encType eq 'WEP'){
   runsudo "ifconfig", $dev, "up";
