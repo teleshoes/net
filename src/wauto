@@ -92,7 +92,11 @@ if($cmd =~ /-a|--action/ and @ARGV == 1){
   }elsif($lastAction =~ /^(none|wifi-connect)$/){
     print "auto\n";
   }else{
-    print "on purpose\n";
+    my $msg = $lastAction;
+    $msg =~ s/wifi//;
+    $msg =~ s/[^a-zA-Z]//g;
+    $msg = substr $msg, 0, 9;
+    print "$msg\n";
   }
 }elsif($cmd =~ /-c|--connect/){
   my $lastAction = readAction();
