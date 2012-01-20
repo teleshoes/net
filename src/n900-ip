@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $tetherExec = `echo -n \$HOME/Desktop/N900/config/n900-tether`;
+my $tetherExec = 'tether';
 
 #normally, the usb mac is randomly generated, but you can make it be
 # the same each time. this script assumes you do so, since its really

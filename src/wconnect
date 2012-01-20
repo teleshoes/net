@@ -89,7 +89,7 @@ if($justDisconnect){
   exit 0;
 }
 
-runsudo "n900-tether", "off";
+runsudo "tether", "off";
 
 if(not defined $ssid or $encType !~ /^(WPA|WPA2|WEP|NONE)$/){
   die "Usage:
