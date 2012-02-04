@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+#Copyright 2010,2012 Elliot Wolk
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+use strict;
+use warnings;
+
+my $targetFile = '/etc/resolv.conf';
+my $configDir = "$ENV{HOME}/resolv/";
+
+sub getAvailableConfigs(){
+  my @configs;
+  for my $file(`ls -1 $configDir/`){
+    push @configs, $1 if $file =~ /resolv\.conf\.([a-z]+)/;
+  }
+  return @configs;
+}
+
+sub replaceResolv($){
+  my $file = shift;
+  system "chattr", "-i", $targetFile;
+  system "rm", $targetFile;
+  system "cp", $file, $targetFile;
+  system "chattr", "+i", $targetFile;
+}
+
+sub main(@){
+  my $conf = shift;
+  $conf = 'default' if not defined $conf;
+
+  my $configs = join "|", getAvailableConfigs();
+  if (@_ > 0 or $conf !~ /^($configs)$/){
+    die "Usage:
+      $0 CONFIG
+         {available configs: $configs}
+         configs are named resolv.conf.CONFIG in $configDir/
+         {letters [a-z]+ only}
+         if resolv.conf.default is in $configDir,
+         that is used if no args are passed
+      Takes the specified file, overwrites $conf,
+      and makes it read-only with 'chattr +i'\n";
+  }
+  my $file = "$configDir/resolv.conf.$conf";
+  print "resolv: applying $conf";
+  if(-l $file){
+    my $link = `ls -l $file`;
+    if($link =~ /-> .*resolv\.conf\.([a-z]+)/){
+      my $realChoice = $1;
+      print " => $realChoice";
+    }
+  }
+  print "\n";
+
+  replaceResolv $file; 
+}
+
+&main(@ARGV);

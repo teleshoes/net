@@ -38,7 +38,7 @@ if($arg eq 'on'){
   close FH;
   system 'killall', '-9', 'pppd', 'wvdial';
   system "initctl stop network-manager" if $USE_NETWORK_MANAGER;
-  system "resolvchooser default";
+  system "resolv";
   system "wconnect -d";
   system 'wvdial', '-C', $CONFIG;
   system "wauto --action ppp-connect";

@@ -129,6 +129,6 @@ if($encType eq 'WPA' or $encType eq 'WPA2'){
     "mode", $mode;
 }
 
-runsudo "resolvchooser", "default";
+runsudo "resolv";
 runsudo "dhclient", "$dev";
 runsudo "wauto", "--action", "wifi-connect";
