@@ -5,7 +5,7 @@ use warnings;
 my $DEV = '/dev/ttyACM0';
 my $CONFIG = "$ENV{HOME}/wvdial.conf";
 
-my $arg = shift() or 'toggle';
+my $arg = shift() || 'toggle';
 if(@ARGV > 0 or $arg !~ /^(on|off|toggle)$/){
   die "Usage: $0 [on|off|toggle]  {toggle is default}\n";
 }
