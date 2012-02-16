@@ -109,6 +109,7 @@ sub main(@){
     die $usage;
   }
 
+  disconnectWifi;
   connectWifi $ssid, $encType, $key, $mode;
 }
 &main(@ARGV);
