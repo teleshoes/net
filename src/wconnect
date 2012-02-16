@@ -2,11 +2,6 @@
 use strict;
 use warnings;
 
-if(`whoami` ne "root\n"){
-  print STDERR "rerunning as root...\n";
-  exec "sudo", "$0", @ARGV;
-}
-
 my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $winfoExec = 'winfo';
@@ -15,7 +10,9 @@ my $modeDefault = 'managed';
 my $dev = `ifdev wlan`;
 chomp $dev;
 
-my $usage = "Usage: "
+my $usage = "Usage: \n"
+  . "$0 -h|--help\n"
+  . "   show this message\n"
   . "$0 SSID\n"
   . "   look up SSID with $winfoExec and use that enc method, key, and mode\n"
   . "$0 SSID none [mode]\n"
@@ -28,6 +25,13 @@ my $usage = "Usage: "
   . "$0 -d\n"
   . "   disconnect\n"
   ;
+
+die $usage if(@ARGV == 1 and $ARGV[0] =~ /^(-h|--help)$/);
+
+if(`whoami` ne "root\n"){
+  print STDERR "rerunning as root...\n";
+  exec "sudo", "$0", @ARGV;
+}
 
 sub run(@){
   print "exec: @_\n";
