@@ -1,0 +1,17 @@
+_netssids(){
+  local cur ssids
+  cur="${COMP_WORDS[COMP_CWORD]}"
+
+  if [ ${#COMP_WORDS[@]} == 2 ]; then
+    ssids=`winfo --list`
+    cur="${cur,,}" #lowercase
+    ssids="${ssids,,}" #lowercase
+    COMPREPLY=( $(compgen -W "$ssids" -- $cur) )
+  else
+    COMPREPLY=()
+  fi
+}
+
+complete -F _netssids wconnect
+complete -F _netssids winfo
+
