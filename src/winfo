@@ -1,0 +1,119 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $netConf = "$ENV{HOME}/wifi.conf";
+my $autoConf = "$ENV{HOME}/wifi-auto.conf";
+
+my $quotedStr = '"(?:[^"]|"")*"';
+my $unquotedStr = '[^ \t"]*';
+my $str = "(?:$quotedStr|$unquotedStr)";
+my $lineRegex = qr/^\s*($str)\s*($str)\s*($str)\s*($str)\s*$/;
+
+my $validEncs = "wep|wpa|none";
+my $encDefault = 'none';
+my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
+my $modeDefault = 'managed';
+
+my $usage = "Usage:\n"
+  . "  $0 SSID\n"
+  . "    print ssid, enc, key, mode, and auto for a given SSID\n"
+  . "  $0 --list-auto\n"
+  . "    prints all auto-connectable SSIDs in config and their priority\n"
+  . "  $0 --list|--list-all\n"
+  . "    prints all SSIDs in config\n"
+;
+
+my $format = ''
+  . "Entries are one per line:\n"
+  . "SSID ENC KEY MODE\n"
+  . "Attributes are whitespace-separated, doublequoted strings\n"
+  . " any amount of leading and trailing whitespace/tabs is permitted\n"
+  . " a literal doublequote character is represented by \"\"\n"
+  . " double-quotes may be omitted if an att has no \"s or whitespace\n"
+  . "Lines beginning with #s {or some whitespace and then a #} are ignored\n"
+  . "SSID: <required> essid\n"
+  . "ENC:  <optional> encryption mode {default = \"$encDefault\"}\n"
+  . "      one of $validEncs \n"
+  . "KEY:  <optional> wpa or wep key {default = \"\"}\n"
+  . "      ASCII wep keys need 's:' at the front. hex keys do not.\n"
+  . "      wpa PSK/TKIP keys cannot be given in hex; this is bad, probably\n"
+  . "MODE: <optional> wifi mode {default = \"$modeDefault\"}\n"
+  . "      one of $validModes\n"
+;
+
+sub dieConfig($;$){
+  my $line = shift();
+  my $reason = shift() || '';
+  die "Malformed line in $netConf\n$format\nLine: '$line'\n$reason\n";
+}
+sub unquote($){
+  my $s = shift;
+  $s =~ s/^"|"$//g;
+  $s =~ s/""/"/g;
+  return $s;
+}
+sub parseLine($){
+  my $line = shift;
+  if($line =~ $lineRegex){
+    my ($ssid, $enc, $key, $mode) = map {unquote $_} ($1, $2, $3, $4);
+    $enc = $encDefault if $enc eq '';
+    $mode = $modeDefault if $mode eq '';
+    if(length $ssid == 0){
+      dieConfig $line, "Error: SSID is empty";
+    }elsif($enc !~ /^($validEncs)$/i){
+      dieConfig $line, "Error: invalid: ENC $enc\n";
+    }elsif($mode !~ /^($validModes)$/i){
+      dieConfig $line, "Error: invalid: MODE $mode\n";
+    }
+    return ($ssid, $enc, $key, $mode);
+  }else{
+    dieConfig $line;
+  }
+}
+
+sub main(@){
+  my ($targetSSID, $listAll, $listAuto);
+  if(@_ == 1 and $_[0] =~ /^(--list|--list-all)$/){
+    $listAll = 1;
+  }elsif(@_ == 1 and $_[0] eq '--list-auto'){
+    $listAuto = 1;
+  }elsif(@_ == 1){
+    $targetSSID = shift;
+  }else{
+    die $usage;
+  }
+
+  my %entries;
+  my %lcEntries;
+  open FH, "< $netConf" or die "Could not open $netConf for reading\n";
+  my $line;
+  while($line = <FH>){
+    next if $line =~ /^\s*(#|$)/;
+    chomp $line;
+    my ($ssid, $enc, $key, $mode) = parseLine $line;
+    $entries{$ssid} = [$ssid, $enc, $key, $mode];
+    $lcEntries{lc $ssid} = [$ssid, $enc, $key, $mode];
+  }
+  close FH;
+
+  my $count = 1;
+  my %autos = map{chomp; ($_ => $count++)} `cat $autoConf`;
+
+  if(defined $listAll){
+    print join("\n", keys %entries) . "\n";
+  }elsif(defined $listAuto){
+    for my $ssid(sort {$autos{$a} cmp $autos{$b}} keys %autos){
+      print "$autos{$ssid}:$ssid\n";
+    }
+  }elsif(defined $targetSSID){
+    my $entry = $entries{$targetSSID} || $lcEntries{lc $targetSSID};
+    if(defined $entry){
+      my ($ssid, $enc, $key, $mode) = @{$entry};
+      my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
+      print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
+    }
+  }
+}
+
+&main(@ARGV);

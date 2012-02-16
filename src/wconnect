@@ -2,133 +2,113 @@
 use strict;
 use warnings;
 
+if(`whoami` ne "root\n"){
+  print STDERR "rerunning as root...\n";
+  exec "sudo", "$0", @ARGV;
+}
+
 my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
-$ENV{PATH}='/bin:/usr/bin:/usr/local/bin:/sbin:/usr/local/sbin';
-my $home = $ENV{HOME};
-$home =~ /^([a-zA-Z0-9_\-\/]+)$/;
-$home = $1;
-my $wifiConf = "$home/wifi.conf";
+my $winfoExec = 'winfo';
+my $modeDefault = 'managed';
 
 my $dev = `ifdev wlan`;
-$dev =~ /(wlan\d+)/;
-$dev = $1;
+chomp $dev;
 
-my $justDisconnect = 0;
+my $usage = "Usage: "
+  . "$0 SSID\n"
+  . "   look up SSID with $winfoExec and use that enc method, key, and mode\n"
+  . "$0 SSID none [mode]\n"
+  . "   use no enc method or key {mode defaults to '$modeDefault'}\n"
+  . "$0 SSID wpa key [mode]\n"
+  . "   use given WPA PSK/TKIP {mode defaults to '$modeDefault'}\n"
+  . "$0 SSID wep key [mode]\n"
+  . "   use given WEP key {mode defaults to '$modeDefault'}\n"
+  . "   note that ascii wep keys start with 's:', e.g.: s:APLEANDBANANA\n"
+  . "$0 -d\n"
+  . "   disconnect\n"
+  ;
 
-my ($list, $ssid, $encType, $key, $mode);
-$mode = 'Managed';
-if(@ARGV == 1 and $ARGV[0] eq '--list'){
-  $list = 1;
-}elsif(@ARGV == 1 and $ARGV[0] eq '-d'){
-  $justDisconnect = 1;
-}else{
-  $list = 0;
-  $ssid = shift;
-  $encType = shift;
-  $key = shift;
-}
-
-my @networks;
-if(-e $wifiConf){
-  my $unsafeCode = `cat $wifiConf`;
-  $unsafeCode =~ /(.*)/s;
-  $unsafeCode = $1;
-  use Safe;
-  @networks = new Safe() -> reval($unsafeCode);
-  no Safe;
-}
-
-if($list){
-  for my $net(@networks){
-    print "$$net[0]\n";
-  }
-  exit 0;
-}
-
-if(defined $ssid and (not defined $encType or not defined $key)){
-  for my $network(@networks){
-    if($ssid eq $$network[0]){
-      print "preconfigured network\n";
-      $encType = $$network[1];
-      $key = $$network[2];
-      $mode = $$network[4] if @$network > 4;
-      last;
-    }
-  }
-}
-if(defined $ssid and (not defined $encType or not defined $key)){
-  for my $network(@networks){
-    if(lc $ssid eq lc $$network[0]){
-      $ssid = $$network[0];
-      print "preconfigured network, case changed to $ssid\n";
-      $encType = $$network[1];
-      $key = $$network[2];
-      $mode = $$network[4] if @$network > 4;
-      last;
-    }
-  }
-}
-
-if(not defined $encType or not defined $key){
-  $encType = 'NONE';
-  $key = '';
-}
-
-
-my $amRoot = `whoami` eq "root\n";
-sub runsudo(@){
-  @_ = ('sudo', @_) if not $amRoot;
-  print "exec: " . join(' ', @_) . "\n";
+sub run(@){
+  print "exec: @_\n";
   system @_;
 }
 
-runsudo "killall", "wpa_supplicant", "dhclient";
-if($justDisconnect){
-  system "wauto --action wifi-disconnect";
-  exit 0;
+sub connectWifi($$$$){
+  my ($ssid, $encType, $key, $mode) = @_;
+  if($encType eq 'WPA'){
+    my $conf = ''
+      . "network={\n"
+      . "  ssid=\"$ssid\"\n"
+      . "  psk=\"$key\"\n"
+      . "}\n"
+    ;
+    run "rm", $wpaConf;
+    print "writing $wpaConf:\n$conf\n";
+    open FH, "> $wpaConf" or die "Couldn't write $wpaConf: $!\n";
+    print FH $conf;
+    close FH;
+    run "ifconfig", $dev, "up";
+    run "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
+    run "sleep", "1";
+  }elsif($encType eq 'WEP'){
+    run "ifconfig", $dev, "up";
+    run "iwconfig", $dev,
+      "essid", $ssid,
+      "key", $key,
+      "channel", "auto",
+      "mode", $mode;
+  }elsif($encType eq 'NONE'){
+    run "ifconfig", $dev, "up";
+    run "iwconfig", $dev,
+      "essid", $ssid,
+      "channel", "auto",
+      "mode", $mode;
+  }
+
+  run "resolv";
+  run "dhclient", "$dev";
+}
+sub disconnectWifi(){
+  run "killall", "wpa_supplicant", "dhclient";
 }
 
-runsudo "tether", "off";
+sub main(@){
+  die $usage if @_ > 4;
+  if(@_ == 1 and $_[0] eq '-d'){
+    disconnectWifi;
+    exit 0;
+  }
+  my ($ssid, $encType, $key, $mode);
+  if(@_ == 1){
+    my $ssidArg = shift;
+    my $winfo = `$winfoExec $ssidArg`;
+    if($winfo =~ /ssid:(.*)\nenc:(.*)\nkey:(.*)\nmode:(.*)\nauto:(.*)\n/){
+      ($ssid, $encType, $key, $mode) = ($1, $2, $3, $4);
+      if($ssid ne $ssidArg){
+        print "using '$ssid' instead of '$ssidArg'\n";
+      }
+    }else{
+      die "Unknown SSID: $ssid\n";
+    }
+  }elsif(@_ <= 4){
+    ($ssid, $encType, $key, $mode) = @_;
+    die $usage if not defined $ssid or not defined $encType;
+    
+    $mode = $modeDefault if not defined $mode;
+    
+    $encType = lc $encType;
+    if($encType eq 'none'){
+      die $usage if defined $key;
+    }elsif($encType =~ /^(wpa|wep)$/){
+      die $usage if not defined $key;
+    }else{
+      die $usage;
+    }
+  }else{
+    die $usage;
+  }
 
-if(not defined $ssid or $encType !~ /^(WPA|WPA2|WEP|NONE)$/){
-  die "Usage:
-    $0 <SSID> [WPA|WPA2|WEP|NONE] [key]
-    $0 --list
-  ";
+  connectWifi $ssid, $encType, $key, $mode;
 }
-
-
-if($encType eq 'WPA' or $encType eq 'WPA2'){
-  my $conf = ''
-       . "network={\n"
-       . "  ssid=\"$ssid\"\n"
-       . "  psk=\"$key\"\n"
-       . "}\n"
-       ;
-  runsudo "rm", $wpaConf;
-  print "writing $wpaConf:\n$conf\n";
-  open FH, "> $wpaConf" or die "Couldn't write $wpaConf: $!\n";
-  print FH $conf;
-  close FH;
-  runsudo "ifconfig", $dev, "up";
-  runsudo "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
-  runsudo "sleep", "1";
-}elsif($encType eq 'WEP'){
-  runsudo "ifconfig", $dev, "up";
-  runsudo "iwconfig", $dev,
-    "essid", $ssid,
-    "key", $key,
-    "channel", "auto",
-    "mode", $mode;
-}elsif($encType eq 'NONE'){
-  runsudo "ifconfig", $dev, "up";
-  runsudo "iwconfig", $dev,
-    "essid", $ssid,
-    "channel", "auto",
-    "mode", $mode;
-}
-
-runsudo "resolv";
-runsudo "dhclient", "$dev";
-runsudo "wauto", "--action", "wifi-connect";
+&main(@ARGV);

@@ -2,17 +2,22 @@
 use strict;
 use warnings;
 
-my @networks;
-my $wifiConf = "$ENV{HOME}/wifi.conf";
-if(-e $wifiConf){
-  use Safe;
-  my $unsafeCode = `cat $wifiConf`;
-  @networks = new Safe() -> reval($unsafeCode);
-}
-
 my $lastScanFile = "/tmp/wscan-last";
 my $dev = `ifdev wlan`;
 chomp $dev;
+my $winfoExec = 'winfo';
+
+my $usage = "Usage:\n"
+  . "$0 [--now] [--pretty|--ssids]\n"
+  . "  perform a scan immediately\n"
+  . "$0 -l|--last [--pretty|--ssids]\n"
+  . "  print results of last scan as if just invoked\n"
+  . "$0 <DELAY_INT> [--pretty|--ssids]\n"
+  . "  perform a scan only if last scan is <DELAY_INT> seconds old\n"
+  . "\n"
+  . "--pretty does pretty-printing {default}\n"
+  . "--ssids prints one ssid per line and nothing else\n"
+;
 
 sub parseCell($);
 sub trimPad($$);
@@ -26,46 +31,62 @@ sub cellSort($$){
   );
 }
 
+sub scanNow(){
+  system "sudo ifconfig $dev up";
+  my $iwlist = `sudo iwlist $dev scan`;
+  if($? != 0){
+    exit 1;
+  }
+  if($iwlist =~ s/^$dev\s*Scan completed :\n//){
+    open FH, "> $lastScanFile";
+    print FH $iwlist;
+    close FH;
+  }
+  return $iwlist;
+}
+sub scanLast(){
+  return `cat $lastScanFile`;
+}
+sub scanRecent($){
+  my $delay = shift;
+  my $scanDate = 0;
+  if(-e $lastScanFile){
+    $scanDate = `stat --format %Y $lastScanFile`;
+    chomp $scanDate;
+    $scanDate = 0 if not $scanDate =~ /^\d+$/;
+  }
+  my $now = `date +%s`;
+  my $elapsed = $now - $scanDate;
+  if($elapsed > $delay){
+    print "wscan is out of date, rescanning\n";
+    return scanNow;
+    exec $0;
+  }else{
+    print "wscan is only $elapsed seconds old, skipping\n";
+    return scanLast;
+  }
+  exit 0;
+}
+
 sub main(@){
   my $iwlist;
-  if(@_ == 0){
-    system "sudo ifconfig $dev up";
-    $iwlist = `sudo iwlist $dev scan`;
-    if($? != 0){
-      exit 1;
-    }
-    if($iwlist =~ s/^$dev\s*Scan completed :\n//){
-      open FH, "> $lastScanFile";
-      print FH $iwlist;
-      close FH;
-    }
-  }elsif(@_ == 2 and $_[0] eq '-r' and $_[1] =~ /^\d+$/){
-    my $delay = $_[1];
-    my $scanDate = 0;
-    if(-e $lastScanFile){
-      $scanDate = `stat --format %Y $lastScanFile`;
-      chomp $scanDate;
-      $scanDate = 0 if not $scanDate =~ /^\d+$/;
-    }
-    my $now = `date +%s`;
-    my $elapsed = $now - $scanDate;
-    if($elapsed > $delay){
-      print "wscan is out of date, rescanning\n";
-      exec $0;
-    }else{
-      print "wscan is only $elapsed seconds old, skipping\n";
-    }
-    exit 0;
-  }elsif(@_ == 1 and $_[0] eq '-l'){
-    $iwlist = `cat $lastScanFile`;
+  my $format = '--pretty';
+  if(@_ > 0 and $_[-1] =~ /^(--pretty|--ssids)$/){
+    $format = pop;
+  }
+  
+  my $sched = shift;
+  $sched = '--now' if not defined $sched;
+
+  die $usage if @_ > 0;
+  if($sched eq '--now'){
+    $iwlist = scanNow;
+  }elsif($sched =~ /^(-l|--last)$/){
+    $iwlist = scanLast;
+  }elsif($sched =~ /^\d+$/){
+    $iwlist = scanRecent $sched;
   }else{
-    die "Usage:
-      $0
-        perform a scan immediately
-      $0 -l
-        print results of last scan as if just invoked
-      $0 -r  <delay>
-        perform a scan only if last scan is delay seconds old\n";
+    die $usage;
   }
 
   my @cells = split /          Cell \d+ - /, $iwlist;
@@ -74,20 +95,26 @@ sub main(@){
   my @parsedCells = map {parseCell $_} @cells;
 
   @parsedCells = sort {cellSort $a, $b} @parsedCells;
+  if($format eq '--pretty'){
+    my %auto = map {chomp; s/^(\d+)://; $_ => $1} `$winfoExec --list-auto`;
+    my %all = map {chomp; $_ => 1} `$winfoExec --list-all`;
 
-  for my $cell(@parsedCells){
-    my $foundStr = '';
-    for my $network(@networks){
-      my $essid = $$network[0];
-      if($$cell{SSID} eq $essid){
-        $foundStr = "[$$network[3]]";
-        last;
+    for my $cell(@parsedCells){
+      my $info = '';
+      if(defined $auto{$$cell{SSID}}){
+        $info = "[$auto{$$cell{SSID}}]";
+      }elsif(defined $all{$$cell{SSID}}){
+        $info = '--'
       }
+      print trimPad($$cell{SSID},       20) . " | " .
+            trimPad($$cell{QUALITY},     4) . " | " .
+            trimPad($$cell{ENCRYPTION},  4) . " | " .
+            trimPad($info,               5) . "\n";
     }
-    print trimPad($$cell{SSID},       20) . " | " .
-          trimPad($$cell{QUALITY},     4) . " | " .
-          trimPad($$cell{ENCRYPTION},  4) . " | " .
-          trimPad($foundStr, 5) . "\n";
+  }elsif($format eq '--ssids'){
+    for my $cell(@parsedCells){
+      print "$$cell{SSID}\n";
+    }
   }
 }
 
