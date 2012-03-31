@@ -6,6 +6,7 @@ my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
+my $wifiModule = 'iwlagn';
 
 my $dev = `ifdev wlan`;
 chomp $dev;
@@ -38,6 +39,21 @@ sub run(@){
   system @_;
 }
 
+sub reloadModule(){
+  print "\n\nreloading $wifiModule as a workaround\n";
+  run "modprobe", "-r", $wifiModule;
+  run "modprobe", $wifiModule;
+  run "sleep 0.5";
+  print "\n\n";
+}
+
+sub ifup(){
+  run "ifconfig", $dev, "down";
+}
+sub ifdown(){
+  run "ifconfig", $dev, "down";
+}
+
 sub connectWifi($$$$){
   my ($ssid, $encType, $key, $mode) = @_;
   if($encType eq 'WPA'){
@@ -56,12 +72,22 @@ sub connectWifi($$$$){
     run "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
     run "sleep", "1";
   }elsif($encType eq 'WEP'){
-    run "ifconfig", $dev, "up";
-    run "iwconfig", $dev,
+    if($mode =~ /ad-hoc/){
+      reloadModule();
+    }
+    my @iwconfig = ("iwconfig", $dev,
       "essid", $ssid,
       "key", $key,
       "channel", "auto",
-      "mode", $mode;
+      "mode", $mode
+    );
+    print "\n\nrunning iwconfig while its down-\n";
+    ifdown();
+    run @iwconfig;
+    print "running iwconfig while its up-\n";
+    ifup();
+    run @iwconfig;
+    print "\n\n";
   }elsif($encType eq 'NONE'){
     run "ifconfig", $dev, "up";
     run "iwconfig", $dev,
