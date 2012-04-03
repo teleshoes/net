@@ -8,7 +8,7 @@ sub main(@){
   my %auto = map {chomp; s/^(\d+)://; $_ => $1} `$winfoExec --list-auto`;
   my $guess;
   my $autoPriority;
-  for my $ssid(`wscan 3 --ssids`){
+  for my $ssid(`wscan 3 --retry --ssids`){
     chomp $ssid;
     my $p = $auto{$ssid};
     if(defined $p and (not defined $autoPriority or $p < $autoPriority)){
