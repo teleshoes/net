@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $arg = shift;
+$arg = 'on' if not defined $arg;
+
+die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
+
+if(`whoami` ne "root\n"){
+  print STDERR "rerunning as root...\n";
+  exec "sudo", "$0", @ARGV;
+}
+
+my $dev = `ifdev eth`;
+chomp $dev;
+if($dev !~ /^eth/){
+  die "no suitable device {i.e. named eth#} found\n";
+}
+
+sub run(@){
+  print "@_\n";
+  system @_;
+}
+print "disconnecting wired\n";
+run "wconnect", "-d";
+run "ifconfig", $dev, "down";
+run "killall", "dhclient";
+if($arg eq 'on'){
+  print "\n\nconnecting wired\n";
+  run "ifconfig", $dev, "up";
+  run "dhclient $dev";
+}
