@@ -6,6 +6,7 @@ _netssids(){
     ssids=`winfo --list`
     cur="${cur,,}" #lowercase
     ssids="${ssids,,}" #lowercase
+    ssids="$ssids "`wscan -l --ssids 2>/dev/null`
     COMPREPLY=( $(compgen -W "$ssids" -- $cur) )
   else
     COMPREPLY=()
