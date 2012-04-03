@@ -19,7 +19,7 @@ sub main(@){
   if(defined $guess){
     print "$guess\n";
   }else{
-    print STDERR "error: no auto networks available\n";
+    die "error: no auto networks available\n";
   }
 }
 
