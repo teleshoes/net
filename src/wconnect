@@ -54,6 +54,26 @@ sub ifdown(){
   run "ifconfig", $dev, "down";
 }
 
+sub iwconfig($$$$){
+  my ($ssid, $key, $channel, $mode) = @_;
+  if($mode =~ /ad-hoc/){
+    reloadModule();
+  }
+  my @iwconfig = ("iwconfig", $dev,
+    "essid", $ssid,
+    (defined $key ? ("key", $key) : ()),
+    "channel", "auto",
+    "mode", $mode
+  );
+  print "\n\nrunning iwconfig while its down-\n";
+  ifdown();
+  run @iwconfig;
+  print "running iwconfig while its up-\n";
+  ifup();
+  run @iwconfig;
+  print "\n\n";
+}
+
 sub connectWifi($$$$){
   my ($ssid, $encType, $key, $mode) = @_;
   if(lc $encType eq 'wpa'){
@@ -72,28 +92,9 @@ sub connectWifi($$$$){
     run "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
     run "sleep", "1";
   }elsif(lc $encType eq 'wep'){
-    if($mode =~ /ad-hoc/){
-      reloadModule();
-    }
-    my @iwconfig = ("iwconfig", $dev,
-      "essid", $ssid,
-      "key", $key,
-      "channel", "auto",
-      "mode", $mode
-    );
-    print "\n\nrunning iwconfig while its down-\n";
-    ifdown();
-    run @iwconfig;
-    print "running iwconfig while its up-\n";
-    ifup();
-    run @iwconfig;
-    print "\n\n";
+    iwconfig $ssid, $key, 'auto', $mode;
   }elsif(lc $encType eq 'none'){
-    run "ifconfig", $dev, "up";
-    run "iwconfig", $dev,
-      "essid", $ssid,
-      "channel", "auto",
-      "mode", $mode;
+    iwconfig $ssid, undef, 'auto', $mode;
   }
 
   run "resolv";
