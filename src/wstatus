@@ -24,5 +24,10 @@ for my $dev(@devs){
   }
 }
 
-print "none\n";
+system "pidof pppd wvdial > /dev/null 2>/dev/null";
+if($? == 0){
+  print "tethering\n";
+}else{
+  print "none\n";
+}
 exit 0;
