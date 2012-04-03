@@ -11,11 +11,11 @@ my $usage = "Usage:\n"
   . "$0 [--now] [--retry] [--pretty|--ssids]\n"
   . "  perform a scan immediately\n"
   . "$0 -l|--last [--pretty|--ssids]\n"
-  . "  print results of last scan as if just invoked\n"
+  . "  print results of last scan\n"
   . "$0 <DELAY_INT> [--retry] [--pretty|--ssids]\n"
   . "  perform a scan only if last scan is <DELAY_INT> seconds old\n"
   . "\n"
-  . "--pretty does pretty-printing {default}\n"
+  . "--pretty prints in human-readable table {default}\n"
   . "--ssids prints one ssid per line and nothing else\n"
   . "--retry retries every second forever until a scan is successful\n"
 ;
@@ -61,15 +61,18 @@ sub scanRecent($$){
     $scanDate = `stat --format %Y $lastScanFile`;
     chomp $scanDate;
     $scanDate = 0 if not $scanDate =~ /^\d+$/;
+  }else{
+    print STDERR "no previous scan exists, scanning...\n";
+    return scanNow $retry;
   }
   my $now = `date +%s`;
   my $elapsed = $now - $scanDate;
+  print STDERR "last scan is ${elapsed}s old; ";
   if($elapsed > $delay){
-    print "wscan is out of date, rescanning\n";
+    print STDERR "exceeds the limit of ${delay}s, rescanning...\n";
     return scanNow $retry;
-    exec $0;
   }else{
-    print "wscan is only $elapsed seconds old, skipping\n";
+    print STDERR "within limit of ${delay}s, skipping scan\n";
     return scanLast;
   }
   exit 0;
@@ -103,6 +106,13 @@ sub main(@){
     die $usage;
   }
 
+  printScan $iwlist, $format;
+}
+
+sub printScan($$){
+  my $iwlist = shift;
+  my $format = shift;
+
   my @cells = split /          Cell \d+ - /, $iwlist;
   shift @cells;
 
@@ -131,9 +141,6 @@ sub main(@){
     }
   }
 }
-
-
-
 
 sub parseCell($){
   my $cell = shift;
