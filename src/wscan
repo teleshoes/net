@@ -79,7 +79,11 @@ sub scanNow($){
   return $iwlist;
 }
 sub scanLast(){
-  return `cat $lastScanFile`;
+  if(-e $lastScanFile){
+    return `cat $lastScanFile`;
+  }else{
+    die "No scan file exists\n";
+  }
 }
 sub scanRecent($$){
   my $delay = shift;
