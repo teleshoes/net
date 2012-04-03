@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $wautoPidfile = '/tmp/wauto-pidfile';
+if(-e $wautoPidfile){
+  system "kill -9 `cat $wautoPidfile` >/dev/null 2>/dev/null";
+}
+system "echo $$ > $wautoPidfile";
+
+my $ssid = `wguessid`;
+if($? == 0){
+  print "SSID: $ssid\n";
+  system "wconnect", $ssid;
+}else{
+  die "No suitable ssid found\n";
+}
