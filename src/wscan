@@ -8,15 +8,16 @@ chomp $dev;
 my $winfoExec = 'winfo';
 
 my $usage = "Usage:\n"
-  . "$0 [--now] [--pretty|--ssids]\n"
+  . "$0 [--now] [--retry] [--pretty|--ssids]\n"
   . "  perform a scan immediately\n"
   . "$0 -l|--last [--pretty|--ssids]\n"
   . "  print results of last scan as if just invoked\n"
-  . "$0 <DELAY_INT> [--pretty|--ssids]\n"
+  . "$0 <DELAY_INT> [--retry] [--pretty|--ssids]\n"
   . "  perform a scan only if last scan is <DELAY_INT> seconds old\n"
   . "\n"
   . "--pretty does pretty-printing {default}\n"
   . "--ssids prints one ssid per line and nothing else\n"
+  . "--retry retries every second forever until a scan is successful\n"
 ;
 
 sub parseCell($);
@@ -31,12 +32,17 @@ sub cellSort($$){
   );
 }
 
-sub scanNow(){
+sub scanNow($){
+  my $retry = shift;
   system "sudo ifconfig $dev up";
-  my $iwlist = `sudo iwlist $dev scan`;
-  if($? != 0){
-    exit 1;
-  }
+  my $iwlist;
+  do{
+    $iwlist = `sudo iwlist $dev scan`;
+    $retry = 0 if $? == 0;
+    sleep 1 if $retry;
+  }while($retry);
+  
+  exit 1 if $? != 0;
   if($iwlist =~ s/^$dev\s*Scan completed :\n//){
     open FH, "> $lastScanFile";
     print FH $iwlist;
@@ -47,8 +53,9 @@ sub scanNow(){
 sub scanLast(){
   return `cat $lastScanFile`;
 }
-sub scanRecent($){
+sub scanRecent($$){
   my $delay = shift;
+  my $retry = shift;
   my $scanDate = 0;
   if(-e $lastScanFile){
     $scanDate = `stat --format %Y $lastScanFile`;
@@ -59,7 +66,7 @@ sub scanRecent($){
   my $elapsed = $now - $scanDate;
   if($elapsed > $delay){
     print "wscan is out of date, rescanning\n";
-    return scanNow;
+    return scanNow $retry;
     exec $0;
   }else{
     print "wscan is only $elapsed seconds old, skipping\n";
@@ -74,17 +81,24 @@ sub main(@){
   if(@_ > 0 and $_[-1] =~ /^(--pretty|--ssids)$/){
     $format = pop;
   }
+
+  my $retry = 0;
+  if(@_ > 0 and $_[-1] =~ /^--retry$/){
+    $retry = 1;
+    pop;
+  }
+
   
   my $sched = shift;
   $sched = '--now' if not defined $sched;
 
   die $usage if @_ > 0;
   if($sched eq '--now'){
-    $iwlist = scanNow;
-  }elsif($sched =~ /^(-l|--last)$/){
+    $iwlist = scanNow $retry;
+  }elsif($sched =~ /^(-l|--last)$/ and $retry == 0){
     $iwlist = scanLast;
   }elsif($sched =~ /^\d+$/){
-    $iwlist = scanRecent $sched;
+    $iwlist = scanRecent $sched, $retry;
   }else{
     die $usage;
   }
