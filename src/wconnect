@@ -119,7 +119,7 @@ sub main(@){
         print "using '$ssid' instead of '$ssidArg'\n";
       }
     }else{
-      die "Unknown SSID: $ssid\n";
+      die "Unknown SSID: $ssidArg\n";
     }
   }elsif(@_ <= 4){
     ($ssid, $encType, $key, $mode) = @_;
