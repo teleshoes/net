@@ -48,7 +48,7 @@ sub reloadModule(){
 }
 
 sub ifup(){
-  run "ifconfig", $dev, "down";
+  run "ifconfig", $dev, "up";
 }
 sub ifdown(){
   run "ifconfig", $dev, "down";
