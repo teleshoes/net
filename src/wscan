@@ -20,16 +20,44 @@ my $usage = "Usage:\n"
   . "--retry retries every second forever until a scan is successful\n"
 ;
 
+sub scanNow($);
+sub scanLast();
+sub scanRecent($$);
+
+sub formatScan($$);
+sub cellSort($$);
 sub parseCell($);
 sub trimPad($$);
 
-sub cellSort($$){
-  my ($a, $b) = @_;
-  return (0
-    or $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
-    or ($$b{QUALITY}=~/(\d+)/)[0] <=> ($$a{QUALITY}=~/(\d+)/)[0]
-    or $$a{SSID} cmp $$b{SSID}
-  );
+sub main(@){
+  my $iwlist;
+  my $format = '--pretty';
+  if(@_ > 0 and $_[-1] =~ /^(--pretty|--ssids)$/){
+    $format = pop;
+  }
+
+  my $retry = 0;
+  if(@_ > 0 and $_[-1] =~ /^--retry$/){
+    $retry = 1;
+    pop;
+  }
+
+  
+  my $sched = shift;
+  $sched = '--now' if not defined $sched;
+
+  die $usage if @_ > 0;
+  if($sched eq '--now'){
+    $iwlist = scanNow $retry;
+  }elsif($sched =~ /^(-l|--last)$/ and $retry == 0){
+    $iwlist = scanLast;
+  }elsif($sched =~ /^\d+$/){
+    $iwlist = scanRecent $sched, $retry;
+  }else{
+    die $usage;
+  }
+
+  print formatScan $iwlist, $format;
 }
 
 sub scanNow($){
@@ -78,41 +106,12 @@ sub scanRecent($$){
   exit 0;
 }
 
-sub main(@){
-  my $iwlist;
-  my $format = '--pretty';
-  if(@_ > 0 and $_[-1] =~ /^(--pretty|--ssids)$/){
-    $format = pop;
-  }
 
-  my $retry = 0;
-  if(@_ > 0 and $_[-1] =~ /^--retry$/){
-    $retry = 1;
-    pop;
-  }
-
-  
-  my $sched = shift;
-  $sched = '--now' if not defined $sched;
-
-  die $usage if @_ > 0;
-  if($sched eq '--now'){
-    $iwlist = scanNow $retry;
-  }elsif($sched =~ /^(-l|--last)$/ and $retry == 0){
-    $iwlist = scanLast;
-  }elsif($sched =~ /^\d+$/){
-    $iwlist = scanRecent $sched, $retry;
-  }else{
-    die $usage;
-  }
-
-  printScan $iwlist, $format;
-}
-
-sub printScan($$){
+sub formatScan($$){
   my $iwlist = shift;
   my $format = shift;
 
+  my $msg = '';
   my @cells = split /          Cell \d+ - /, $iwlist;
   shift @cells;
 
@@ -130,16 +129,26 @@ sub printScan($$){
       }elsif(defined $all{$$cell{SSID}}){
         $info = '--'
       }
-      print trimPad($$cell{SSID},       20) . " | " .
-            trimPad($$cell{QUALITY},     4) . " | " .
-            trimPad($$cell{ENCRYPTION},  4) . " | " .
-            trimPad($info,               5) . "\n";
+      $msg .= trimPad($$cell{SSID},       20) . " | " .
+              trimPad($$cell{QUALITY},     4) . " | " .
+              trimPad($$cell{ENCRYPTION},  4) . " | " .
+              trimPad($info,               5) . "\n";
     }
   }elsif($format eq '--ssids'){
     for my $cell(@parsedCells){
-      print "$$cell{SSID}\n";
+      $msg .= "$$cell{SSID}\n";
     }
   }
+  return $msg;
+}
+
+sub cellSort($$){
+  my ($a, $b) = @_;
+  return (0
+    or $$a{ENCRYPTION} cmp $$b{ENCRYPTION}
+    or ($$b{QUALITY}=~/(\d+)/)[0] <=> ($$a{QUALITY}=~/(\d+)/)[0]
+    or $$a{SSID} cmp $$b{SSID}
+  );
 }
 
 sub parseCell($){
