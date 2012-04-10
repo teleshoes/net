@@ -2,15 +2,15 @@
 use strict;
 use warnings;
 
-my $arg = shift;
-$arg = 'on' if not defined $arg;
-
-die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
-
 if(`whoami` ne "root\n"){
   print STDERR "rerunning as root...\n";
   exec "sudo", "$0", @ARGV;
 }
+
+my $arg = shift;
+$arg = 'on' if not defined $arg;
+
+die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
 
 my $dev = `ifdev eth`;
 chomp $dev;
