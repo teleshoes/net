@@ -16,7 +16,7 @@ use strict;
 use warnings;
 
 my $targetFile = '/etc/resolv.conf';
-my $configDir = "$ENV{HOME}/resolv/";
+my $configDir = "$ENV{HOME}/resolv";
 
 sub getAvailableConfigs(){
   my @configs;
@@ -41,14 +41,11 @@ sub main(@){
   my $configs = join "|", getAvailableConfigs();
   if (@_ > 0 or $conf !~ /^($configs)$/){
     die "Usage:
-      $0 CONFIG
-         {available configs: $configs}
-         configs are named resolv.conf.CONFIG in $configDir/
-         {letters [a-z]+ only}
-         if resolv.conf.default is in $configDir,
-         that is used if no args are passed
-      Takes the specified file, overwrites $conf,
-      and makes it read-only with 'chattr +i'\n";
+      $0 [CONFIG_NAME]   {available: $configs}
+        Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
+          and makes it read-only with chattr +i.
+        CONFIG_NAME must be [a-z]+ {lowercase letters only}.
+        'default' is assumed if CONFIG_NAME is omitted.
   }
   my $file = "$configDir/resolv.conf.$conf";
   print "resolv: applying $conf";
