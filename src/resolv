@@ -26,10 +26,16 @@ sub getAvailableConfigs(){
   return @configs;
 }
 
+sub removeResolv(){
+  if(-e $targetFile){
+    system "chattr", "-i", $targetFile;
+    system "rm", "-f", $targetFile;
+  }
+}
+
 sub replaceResolv($){
   my $file = shift;
-  system "chattr", "-i", $targetFile;
-  system "rm", $targetFile;
+  removeResolv();
   system "cp", $file, $targetFile;
   system "chattr", "+i", $targetFile;
 }
@@ -37,6 +43,10 @@ sub replaceResolv($){
 sub main(@){
   my $conf = shift;
   $conf = 'default' if not defined $conf;
+  if($conf eq '-d'){
+    removeResolv();
+    exit 0;
+  }
 
   my $configs = join "|", getAvailableConfigs();
   if (@_ > 0 or $conf !~ /^($configs)$/){
@@ -46,6 +56,9 @@ sub main(@){
           and makes it read-only with chattr +i.
         CONFIG_NAME must be [a-z]+ {lowercase letters only}.
         'default' is assumed if CONFIG_NAME is omitted.
+
+      $0 -d
+        Removes $targetFile\n";
   }
   my $file = "$configDir/resolv.conf.$conf";
   print "resolv: applying $conf";
