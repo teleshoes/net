@@ -61,7 +61,7 @@ sub iwconfig($$$$){
   }
   my @iwconfig = ("iwconfig", $dev,
     "essid", $ssid,
-    (defined $key ? ("key", $key) : ()),
+    "key", $key,
     "channel", "auto",
     "mode", $mode
   );
@@ -94,7 +94,7 @@ sub connectWifi($$$$){
   }elsif(lc $encType eq 'wep'){
     iwconfig $ssid, $key, 'auto', $mode;
   }elsif(lc $encType eq 'none'){
-    iwconfig $ssid, undef, 'auto', $mode;
+    iwconfig $ssid, 'off', 'auto', $mode;
   }
 
   run "resolv";
