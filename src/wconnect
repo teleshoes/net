@@ -113,7 +113,7 @@ sub main(@){
   my ($ssid, $encType, $key, $mode);
   if(@_ == 1){
     my $ssidArg = shift;
-    my $winfo = `$winfoExec $ssidArg`;
+    my $winfo = `$winfoExec "$ssidArg"`;
     if($winfo =~ /ssid:(.*)\nenc:(.*)\nkey:(.*)\nmode:(.*)\nauto:(.*)\n/){
       ($ssid, $encType, $key, $mode) = ($1, $2, $3, $4);
       if($ssid ne $ssidArg){
