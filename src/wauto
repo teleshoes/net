@@ -8,6 +8,7 @@ if(-e $wautoPidfile){
 }
 system "echo $$ > $wautoPidfile";
 
+system "wconnect", "-d";
 my $ssid = `wguessid`;
 if($? == 0){
   chomp $ssid;
