@@ -5,13 +5,13 @@ use warnings;
 my @devs = qw(ppp eth wlan);
 my $tethering = 'tethering';
 my $none = 'none';
-my $okStatuses = join ',', ($none, $tethering, @devs);
 
+my $okStatuses = join ',', ($wauto, $tethering, $none, @devs);
+my $usage = "Usage: $0  print one of [$okStatuses]\n";
 
 sub getDev();
 sub isTethering();
 
-my $usage = "Usage: $0  print one of [$okStatuses]\n";
 
 sub main(@){
   die $usage if @_ > 0;
