@@ -2,32 +2,50 @@
 use strict;
 use warnings;
 
-my $netstat = `ifconfig -s`;
-my $lastActionFile = '/tmp/net_action';
-
 my @devs = qw(ppp eth wlan);
+my $tethering = 'tethering';
+my $none = 'none';
+my $okStatuses = join ',', ($none, $tethering, @devs);
 
-for my $dev(@devs){
-  my $device = `ifdev $dev`;
-  chomp $device;
-  if($? == 0 and $netstat =~ /^$device /m){
-    if($dev eq 'wlan'){
-      my $iwconfig = `iwconfig $device`;
-      if($iwconfig =~ /ESSID:off\/any\s*$/m){
-        next;
+
+sub getDev();
+sub isTethering();
+
+my $usage = "Usage: $0  print one of [$okStatuses]\n";
+
+sub main(@){
+  die $usage if @_ > 0;
+  my $status = getDev();
+  $status = $tethering if not defined $status and isTethering();
+  $status = $none if not defined $status;
+  print "$status\n";
+}
+
+sub getDev(){
+  my @devs = qw(ppp eth wlan);
+  my $netstat = `ifconfig -s`;
+
+  for my $dev(@devs){
+    my $device = `ifdev $dev`;
+    chomp $device;
+    if($? == 0 and $netstat =~ /^$device /m){
+      if($dev eq 'wlan'){
+        my $iwconfig = `iwconfig $device`;
+        if($iwconfig =~ /ESSID:off\/any\s*$/m){
+          next;
+        }
+      }
+      if(`ifconfig $device` =~ /inet addr/){
+        return $dev;
       }
     }
-    if(`ifconfig $device` =~ /inet addr/){
-      print "$dev\n";
-      exit 0;
-    }
   }
+  return undef;
 }
 
-system "pidof pppd wvdial > /dev/null 2>/dev/null";
-if($? == 0){
-  print "tethering\n";
-}else{
-  print "none\n";
+sub isTethering(){
+  system "pidof pppd wvdial > /dev/null 2>/dev/null";
+  return $? == 0;
 }
-exit 0;
+
+&main(@ARGV);
