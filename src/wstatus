@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 my @devs = qw(ppp eth wlan);
+my $wconnect = 'wconnect';
 my $wauto = 'wauto';
 my $tethering = 'tethering';
 my $none = 'none';
@@ -11,12 +12,15 @@ my $okStatuses = join ',', ($wauto, $tethering, $none, @devs);
 my $usage = "Usage: $0  print one of [$okStatuses]\n";
 
 sub getDev();
+sub isWconnect();
+sub isWauto();
 sub isTethering();
 
 
 sub main(@){
   die $usage if @_ > 0;
   my $status = getDev();
+  $status = $wconnect if not defined $status and isWconnect();
   $status = $wauto if not defined $status and isWauto();
   $status = $tethering if not defined $status and isTethering();
   $status = $none if not defined $status;
@@ -43,6 +47,11 @@ sub getDev(){
     }
   }
   return undef;
+}
+
+sub isWconnect(){
+  system "pgrep wconnect > /dev/null 2>/dev/null";
+  return $? == 0;
 }
 
 sub isWauto(){
