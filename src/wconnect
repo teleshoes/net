@@ -6,7 +6,7 @@ my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
-my $wifiModule = 'iwlagn';
+my $wifiModule = 'iwlwifi';
 
 my $dev = `ifdev wlan`;
 chomp $dev;
