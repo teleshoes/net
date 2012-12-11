@@ -4,6 +4,7 @@ use warnings;
 
 my $wpaDriver = 'nl80211';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
+my $lastSSIDFile = '/tmp/last-ssid';
 my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
 my $wifiModule = 'iwlwifi';
@@ -76,6 +77,7 @@ sub iwconfig($$$$){
 
 sub connectWifi($$$$){
   my ($ssid, $encType, $key, $mode) = @_;
+  system "echo $ssid > $lastSSIDFile";
   if(lc $encType eq 'wpa'){
     my $conf = ''
       . "network={\n"
