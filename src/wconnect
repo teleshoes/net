@@ -104,6 +104,7 @@ sub connectWifi($$$$){
 }
 sub disconnectWifi(){
   run "killall", "wpa_supplicant", "dhclient";
+  ifdown();
 }
 
 sub main(@){
