@@ -6,7 +6,7 @@ my $prefix = "/usr/local/bin";
 my $bcDir = "/etc/bash_completion.d";
 
 if(`whoami` ne "root\n"){
-  die "must be run as root; look at what i do first\n";
+  exec "sudo", $0, @ARGV;
 }
 
 sub run(@){
