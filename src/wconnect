@@ -103,6 +103,7 @@ sub connectWifi($$$$){
   run "dhclient", "$dev";
 }
 sub disconnectWifi(){
+  run "iwconfig", $dev, "essid", "";
   run "killall", "wpa_supplicant", "dhclient";
   ifdown();
 }
