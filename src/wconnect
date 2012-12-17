@@ -63,7 +63,7 @@ sub iwconfig($$$$){
   my @iwconfig = ("iwconfig", $dev,
     "essid", $ssid,
     "key", $key,
-    "channel", "auto",
+    "channel", $channel,
     "mode", $mode
   );
   print "\n\nrunning iwconfig while its down-\n";
