@@ -103,7 +103,7 @@ sub main(@){
   if(defined $listAll){
     print join("\n", keys %entries) . "\n";
   }elsif(defined $listAuto){
-    for my $ssid(sort {$autos{$a} cmp $autos{$b}} keys %autos){
+    for my $ssid(sort {$autos{$a} <=> $autos{$b}} keys %autos){
       print "$autos{$ssid}:$ssid\n";
     }
   }elsif(defined $targetSSID){
