@@ -98,7 +98,7 @@ sub main(@){
   close FH;
 
   my $count = 1;
-  my %autos = map{chomp; ($_ => $count++)} `cat $autoConf`;
+  my %autos = map{chomp; ($_ => $count++)} `cat $autoConf 2>/dev/null`;
 
   if(defined $listAll){
     print join("\n", keys %entries) . "\n";
