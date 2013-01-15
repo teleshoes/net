@@ -7,6 +7,8 @@ my $dev = `ifdev wlan`;
 chomp $dev;
 my $winfoExec = 'winfo';
 
+my $encs = join '|', qw(wpa wpa2 wep none);
+my $modes = join '|', qw(ad-hoc managed master repeater secondary monitor auto);
 my $formats = join "|", qw(--pretty --ssids --fuzzy);
 
 my $usage = "Usage:
@@ -139,6 +141,7 @@ sub formatScan($$){
       $msg .= trimPad($$cell{SSID},       20) . " | " .
               trimPad($$cell{QUALITY},     4) . " | " .
               trimPad($$cell{ENCRYPTION},  4) . " | " .
+              trimPad($$cell{MODE},        9) . " | " .
               trimPad($info,               5) . "\n";
     }
   }elsif($format eq '--ssids'){
@@ -171,7 +174,7 @@ sub parseCell($){
   $cell =~ /\s*Quality=(\d+)\/(\d+)/;
   my $quality = $2 == 0 ? '?' : int($1*100/$2)."%";
   $cell =~ /\s*Encryption key:(.*)/;
-  my $enc = '?';
+  my $enc;
   if($1 eq 'on'){
     if($cell =~ /WPA2/){
       $enc = 'WPA2';
@@ -183,10 +186,14 @@ sub parseCell($){
   }else{
     $enc = 'NONE';
   }
+  $cell =~ /\s*Mode:(.*)/;
+  my $mode = lc $1;
+  $mode = 'auto' if $mode !~ /^($modes)$/;
   return {
     SSID => $essid,
     QUALITY => $quality,
     ENCRYPTION => $enc,
+    MODE => $mode,
   };
 }
 
