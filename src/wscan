@@ -20,8 +20,7 @@ my $usage = "Usage:
     perform a scan only if last scan is <DELAY_INT> seconds old
 
   --retry retries every second forever until a scan is successful
-  --pretty prints SSID, QUAL, ENC, MODE, and NOTE in human-readable table
-    this is the default
+  --pretty {DEFAULT} prints SSID, QUAL, ENC, MODE, and NOTE in a table
   --info prints \"SSID,QUAL,ENC,MODE,NOTE\"
   --ssids prints \"SSID\"
   --fuzzy prints \"FUZZY\"
