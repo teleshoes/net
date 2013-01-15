@@ -12,21 +12,21 @@ my $wifiModule = 'iwlwifi';
 my $dev = `ifdev wlan`;
 chomp $dev;
 
-my $usage = "Usage: \n"
-  . "$0 -h|--help\n"
-  . "   show this message\n"
-  . "$0 SSID\n"
-  . "   look up SSID with $winfoExec and use that enc method, key, and mode\n"
-  . "$0 SSID none [mode]\n"
-  . "   use no enc method or key {mode defaults to '$modeDefault'}\n"
-  . "$0 SSID wpa key [mode]\n"
-  . "   use given WPA PSK/TKIP {mode defaults to '$modeDefault'}\n"
-  . "$0 SSID wep key [mode]\n"
-  . "   use given WEP key {mode defaults to '$modeDefault'}\n"
-  . "   note that ascii wep keys start with 's:', e.g.: s:APLEANDBANANA\n"
-  . "$0 -d\n"
-  . "   disconnect\n"
-  ;
+my $usage = "Usage:
+  $0 -h|--help
+     show this message
+  $0 SSID
+     look up SSID with $winfoExec and use that enc method, key, and mode
+  $0 SSID none [mode]
+     use no enc method or key {mode defaults to '$modeDefault'}
+  $0 SSID wpa key [mode]
+     use given WPA PSK/TKIP {mode defaults to '$modeDefault'}
+  $0 SSID wep key [mode]
+     use given WEP key {mode defaults to '$modeDefault'}
+     note that ascii wep keys start with 's:', e.g.: s:APLEANDBANANA
+  $0 -d
+     disconnect
+";
 
 die $usage if(@ARGV == 1 and $ARGV[0] =~ /^(-h|--help)$/);
 
