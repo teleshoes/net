@@ -27,7 +27,7 @@ my $usage = "Usage:
     prints all SSIDs in config
     SSIDs are printed in lowercase, with ' ' replaced with '_'
 
-  --exact  Always print exact ssid
+  --exact  Always print exact ssid, and match ssid exactly
 ";
 
 my $format = ''
@@ -124,7 +124,9 @@ sub main(@){
     }
   }elsif(defined $targetSSID){
     my $entry = $entries{$targetSSID};
-    $entry = $fuzzyEntries{fuzzy $targetSSID} if not defined $entry;
+    if(not defined $entry and not $exact){
+      $entry = $fuzzyEntries{fuzzy $targetSSID};
+    }
     if(defined $entry){
       my ($ssid, $enc, $key, $mode) = @{$entry};
       my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
