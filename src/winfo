@@ -17,7 +17,7 @@ my $modeDefault = 'managed';
 
 my $usage = "Usage:
   $0 [--exact] SSID
-    match the argument against $netConf and essids in the last scan,
+    match the argument against $netConf,
       without regard to case, and with '_' matching ' ' or '_'.
     prints exact ssid, enc, key, mode, and auto
   $0 [--exact] --list-auto
