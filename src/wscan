@@ -20,16 +20,16 @@ my $usage = "Usage:
     perform a scan only if last scan is <DELAY_INT> seconds old
 
   --retry retries every second forever until a scan is successful
-  --pretty prints SSID, ENC, MODE, QUAL, and NOTE in human-readable table
+  --pretty prints SSID, QUAL, ENC, MODE, and NOTE in human-readable table
     this is the default
-  --info prints \"SSID,ENC,MODE,QUAL,NOTE\"
+  --info prints \"SSID,QUAL,ENC,MODE,NOTE\"
   --ssids prints \"SSID\"
   --fuzzy prints \"FUZZY\"
     SSID is the exact ssid
     FUZZY is the ssid in lowercase with ' ' replaced with '_'
+    QUAL is an integer followed by %
     ENC is [$encs]
     MODE is [$modes]
-    QUAL is an integer followed by %
     NOTE is '[new]' if ssid is unknown
             '[auto###]' if ssid is in auto
             '' otherwise
@@ -152,16 +152,16 @@ sub formatScan($$){
 
   @parsedCells = sort {cellSort $a, $b} @parsedCells;
   if($format eq '--pretty'){
-    for my $cell(@parsedCells){
-      $msg .= trimPad($$cell{SSID},       20) . " | " .
-              trimPad($$cell{QUALITY},     4) . " | " .
-              trimPad($$cell{ENCRYPTION},  4) . " | " .
-              trimPad($$cell{MODE},        9) . " | " .
-              trimPad($$cell{NOTE},        9) . "\n";
+    for my $c(@parsedCells){
+      $msg .= trimPad($$c{SSID},       20) . " | " .
+              trimPad($$c{QUALITY},     4) . " | " .
+              trimPad($$c{ENCRYPTION},  4) . " | " .
+              trimPad($$c{MODE},        9) . " | " .
+              trimPad($$c{NOTE},        9) . "\n";
     }
   }elsif($format eq '--info'){
-    for my $cell(@parsedCells){
-      $msg .= "$$cell{SSID},$$cell{ENCRYPTION},$$cell{MODE},$$cell{QUALITY}\n";
+    for my $c(@parsedCells){
+      $msg .= "$$c{SSID},$$c{QUALITY},$$c{ENCRYPTION},$$c{MODE},$$c{NOTE}\n";
     }
   }elsif($format eq '--ssids'){
     for my $cell(@parsedCells){
