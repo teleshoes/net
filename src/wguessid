@@ -5,6 +5,7 @@ use warnings;
 my $winfoExec = 'winfo';
 
 sub main(@){
+  die "Usage: $0\n" if @_ > 0;
   my %auto = map {/^(\d+):(.*)$/; $2 => $1} `$winfoExec --exact --list-auto`;
   my $guess;
   my $autoPriority;
