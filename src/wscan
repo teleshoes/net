@@ -40,6 +40,7 @@ sub scanLast();
 sub scanRecent($$);
 
 sub formatScan($$);
+sub formatCell($$);
 sub cellSort($$);
 sub parseCell($);
 sub trimPad($$);
@@ -130,7 +131,6 @@ sub formatScan($$){
   my $iwlist = shift;
   my $format = shift;
 
-  my $msg = '';
   my @cells = split /          Cell \d+ - /, $iwlist;
   shift @cells;
 
@@ -151,30 +151,30 @@ sub formatScan($$){
   }
 
   @parsedCells = sort {cellSort $a, $b} @parsedCells;
+
+  my @fmtCells = map {formatCell($format, $_) . "\n"} @parsedCells;
+  return join '', @fmtCells;
+}
+
+sub formatCell($$){
+  my ($format, $c) = @_;
   if($format eq '--pretty'){
-    for my $c(@parsedCells){
-      $msg .= trimPad($$c{SSID},       20) . " | " .
-              trimPad($$c{QUALITY},     4) . " | " .
-              trimPad($$c{ENCRYPTION},  4) . " | " .
-              trimPad($$c{MODE},        9) . " | " .
-              trimPad($$c{NOTE},        9) . "\n";
-    }
+    return ''
+      . trimPad($$c{SSID},       20) . " | "
+      . trimPad($$c{QUALITY},     4) . " | "
+      . trimPad($$c{ENCRYPTION},  4) . " | "
+      . trimPad($$c{MODE},        9) . " | "
+      . trimPad($$c{NOTE},        9) . " | "
+    ;
   }elsif($format eq '--info'){
-    for my $c(@parsedCells){
-      $msg .= "$$c{SSID},$$c{QUALITY},$$c{ENCRYPTION},$$c{MODE},$$c{NOTE}\n";
-    }
+    return "$$c{SSID},$$c{QUALITY},$$c{ENCRYPTION},$$c{MODE},$$c{NOTE}";
   }elsif($format eq '--ssids'){
-    for my $cell(@parsedCells){
-      $msg .= "$$cell{SSID}\n";
-    }
+    return $$c{SSID};
   }elsif($format eq '--fuzzy'){
-    for my $cell(@parsedCells){
-      my $fuzzySSID = lc $$cell{SSID};
-      $fuzzySSID =~ tr/ /_/;
-      $msg .= "$fuzzySSID\n";
-    }
+    my $fuzzySSID = lc $$c{SSID};
+    $fuzzySSID =~ tr/ /_/;
+    return $fuzzySSID;
   }
-  return $msg;
 }
 
 sub cellSort($$){
