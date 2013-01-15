@@ -16,16 +16,18 @@ my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
 my $modeDefault = 'managed';
 
 my $usage = "Usage:
-  $0 SSID
-    print SSID, enc, key, mode, and auto for a given SSID
-    prints the exact SSID, but matches it to the argument
-    without regard to case and with '_' matching ' ' or '_'.
-  $0 --list-auto
+  $0 [--exact] SSID
+    match the argument against $netConf and essids in the last scan,
+      without regard to case, and with '_' matching ' ' or '_'.
+    prints exact ssid, enc, key, mode, and auto
+  $0 [--exact] --list-auto
     prints all auto-connectable SSIDs in config and their priority
     SSIDs are printed in lowercase, with ' ' replaced with '_'
-  $0 --list|--list-all
+  $0 [--exact] --list|--list-all
     prints all SSIDs in config
     SSIDs are printed in lowercase, with ' ' replaced with '_'
+
+  --exact  Always print exact ssid
 ";
 
 my $format = ''
@@ -83,6 +85,8 @@ sub fuzzy($){
 }
 
 sub main(@){
+  my $exact = 0;
+  $exact = shift if @_ >1 and $_[0] eq '--exact';
   my ($targetSSID, $listAll, $listAuto);
   if(@_ == 1 and $_[0] =~ /^(--list|--list-all)$/){
     $listAll = 1;
@@ -111,10 +115,12 @@ sub main(@){
   my %autos = map{chomp; ($_ => $count++)} `cat $autoConf 2>/dev/null`;
 
   if(defined $listAll){
-    print join("\n", keys %fuzzyEntries) . "\n";
+    my @ssids = sort $exact ? keys %entries : keys %fuzzyEntries;
+    print join("\n", @ssids) . "\n";
   }elsif(defined $listAuto){
     for my $ssid(sort {$autos{$a} <=> $autos{$b}} keys %autos){
-      print "$autos{$ssid}:" . fuzzy($ssid) . "\n";
+      my $ssidFmt = $exact ? $ssid : fuzzy($ssid);
+      print "$autos{$ssid}:$ssidFmt\n";
     }
   }elsif(defined $targetSSID){
     my $entry = $entries{$targetSSID};
