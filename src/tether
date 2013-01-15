@@ -5,29 +5,47 @@ use warnings;
 my $DEV = '/dev/ttyACM0';
 my $CONFIG = "$ENV{HOME}/wvdial.conf";
 
-my $arg = shift() || 'toggle';
-if(@ARGV > 0 or $arg !~ /^(on|off|toggle)$/){
-  die "Usage: $0 [on|off|toggle]  {toggle is default}\n";
+my $usage = "Usage:
+  $0 [on|off|toggle]   {default=>toggle}
+    on:     kill wvdial and pppd and run wvdial with config '$CONFIG'
+    off:    kill wvdial and pppd
+    toggle: same as on if get() returns 'untethered'. Otherwise same as off.
+  $0 get
+    if $DEV does not exist, print 'none'.
+    if pppd or wvdial is running, print 'tethered'.
+    otherwise, print 'untethered'.
+";
+
+sub get();
+sub tether();
+sub untether();
+
+sub main(@){
+  my $arg = shift() || 'toggle';
+  die $usage if @_ > 0 or $arg !~ /^(on|off|toggle|get)$/;
+  my $state = get;
+
+  $arg = $state eq 'untethered' ? 'on' : 'off' if $arg eq 'toggle';
+
+  print "$state\n" if $arg eq 'get';
+  tether if $arg eq 'on';
+  untether if $arg eq 'off';
 }
 
-if($arg eq 'toggle'){
-  system "pidof pppd wvdial";
-  my $isUp = $? == 0;
-  $arg = $isUp ? 'off' : 'on';
+sub get(){
+  return 'none' if not -e $DEV;
+  system "pidof pppd wvdial >/dev/null 2>/dev/null";
+  return $? == 0 ? 'tethered' : 'untethered';
 }
-
-if($arg ne 'off' and not -e $DEV){
-  print STDERR "Device $DEV not found: untethering instead\n";
-  $arg = 'off';
-}
-
-if($arg eq 'on'){
+sub tether(){
   print "tethering...\n";
   system 'killall', '-9', 'pppd', 'wvdial';
   system "wconnect -d";
   system 'wvdial', '-C', $CONFIG;
   system "resolv";
-}elsif($arg eq 'off'){
+}
+sub untether(){
   print "untethering...\n";
   system 'killall', '-9', 'pppd', 'wvdial';
 }
+&main(@ARGV);
