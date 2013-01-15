@@ -7,18 +7,20 @@ my $dev = `ifdev wlan`;
 chomp $dev;
 my $winfoExec = 'winfo';
 
-my $usage = "Usage:\n"
-  . "$0 [--now] [--retry] [--pretty|--ssids]\n"
-  . "  perform a scan immediately\n"
-  . "$0 -l|--last [--pretty|--ssids]\n"
-  . "  print results of last scan\n"
-  . "$0 <DELAY_INT> [--retry] [--pretty|--ssids]\n"
-  . "  perform a scan only if last scan is <DELAY_INT> seconds old\n"
-  . "\n"
-  . "--pretty prints in human-readable table {default}\n"
-  . "--ssids prints one ssid per line and nothing else\n"
-  . "--retry retries every second forever until a scan is successful\n"
-;
+my $formats = join "|", qw(--pretty --ssids);
+
+my $usage = "Usage:
+  $0 [--now] [--retry] [$formats]
+    perform a scan immediately
+  $0 -l|--last [$formats]
+    print results of last scan
+  $0 <DELAY_INT> [--retry] [$formats]
+    perform a scan only if last scan is <DELAY_INT> seconds old
+
+  --retry retries every second forever until a scan is successful
+  --pretty prints in human-readable table {default}
+  --ssids prints one ssid per line
+";
 
 sub scanNow($);
 sub scanLast();
@@ -32,7 +34,7 @@ sub trimPad($$);
 sub main(@){
   my $iwlist;
   my $format = '--pretty';
-  if(@_ > 0 and $_[-1] =~ /^(--pretty|--ssids)$/){
+  if(@_ > 0 and $_[-1] =~ /^($formats)$/){
     $format = pop;
   }
 
