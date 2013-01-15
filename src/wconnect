@@ -17,6 +17,9 @@ my $usage = "Usage:
      show this message
   $0 SSID
      look up SSID with $winfoExec and use that enc method, key, and mode
+     if SSID is not found in config files, check the last scan
+     if the last scan has an unencrypted network with that name, connect to it
+     using the ssid and mode from the scan
   $0 SSID none [mode]
      use no enc method or key {mode defaults to '$modeDefault'}
   $0 SSID wpa key [mode]
@@ -124,6 +127,14 @@ sub main(@){
         print "using '$ssid' instead of '$ssidArg'\n";
       }
     }else{
+      $winfo = `$winfoExec --scanned "$ssidArg"`;
+      if($winfo =~ /ssid:(.*)\nenc:(.*)\nmode:(.*)\n/){
+        ($ssid, $encType, $mode) = ($1, $2, $3);
+        if(lc $encType eq 'none'){
+          print "found in last scan: $ssid enc=NONE mode=$mode\n";
+          exec $0, $ssid, "NONE", $mode;
+        }
+      }
       die "Unknown SSID: $ssidArg\n";
     }
   }elsif(@_ >= 2 and @_ <= 4){
