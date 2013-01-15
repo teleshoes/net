@@ -9,7 +9,7 @@ my $winfoExec = 'winfo';
 
 my $encs = join '|', qw(wpa wpa2 wep none);
 my $modes = join '|', qw(ad-hoc managed master repeater secondary monitor auto);
-my $formats = join "|", qw(--pretty --ssids --fuzzy);
+my $formats = join "|", qw(--pretty --info --ssids --fuzzy);
 
 my $usage = "Usage:
   $0 [--now] [--retry] [$formats]
@@ -22,6 +22,7 @@ my $usage = "Usage:
   --retry retries every second forever until a scan is successful
   --pretty prints SSID, ENC, MODE, QUAL, and NOTE in human-readable table
     this is the default
+  --info prints \"SSID,ENC,MODE,QUAL,NOTE\"
   --ssids prints \"SSID\"
   --fuzzy prints \"FUZZY\"
     SSID is the exact ssid
@@ -157,6 +158,10 @@ sub formatScan($$){
               trimPad($$cell{ENCRYPTION},  4) . " | " .
               trimPad($$cell{MODE},        9) . " | " .
               trimPad($$cell{NOTE},        9) . "\n";
+    }
+  }elsif($format eq '--info'){
+    for my $cell(@parsedCells){
+      $msg .= "$$cell{SSID},$$cell{ENCRYPTION},$$cell{MODE},$$cell{QUALITY}\n";
     }
   }elsif($format eq '--ssids'){
     for my $cell(@parsedCells){
