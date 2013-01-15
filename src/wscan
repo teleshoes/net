@@ -20,9 +20,18 @@ my $usage = "Usage:
     perform a scan only if last scan is <DELAY_INT> seconds old
 
   --retry retries every second forever until a scan is successful
-  --pretty prints in human-readable table {default}
-  --ssids prints one ssid per line
-  --fuzzy prints one ssid per line, in lowercase with ' ' replaced with '_'
+  --pretty prints SSID, ENC, MODE, QUAL, and NOTE in human-readable table
+    this is the default
+  --ssids prints \"SSID\"
+  --fuzzy prints \"FUZZY\"
+    SSID is the exact ssid
+    FUZZY is the ssid in lowercase with ' ' replaced with '_'
+    ENC is [$encs]
+    MODE is [$modes]
+    QUAL is an integer followed by %
+    NOTE is '[new]' if ssid is unknown
+            '[auto###]' if ssid is in auto
+            '' otherwise
 ";
 
 sub scanNow($);
@@ -125,24 +134,29 @@ sub formatScan($$){
   shift @cells;
 
   my @parsedCells = map {parseCell $_} @cells;
+  my %auto = map {chomp; s/^(\d+)://; $_ => $1}
+    `$winfoExec --exact --list-auto`;
+  my %all = map {chomp; $_ => 1}
+    `$winfoExec --exact --list-all`;
+
+  for my $cell(@parsedCells){
+    my $note = '';
+    if(defined $auto{$$cell{SSID}}){
+      $note = "[auto$auto{$$cell{SSID}}]";
+    }elsif(not defined $all{$$cell{SSID}}){
+      $note = "[new]";
+    }
+    $$cell{NOTE} = $note;
+  }
 
   @parsedCells = sort {cellSort $a, $b} @parsedCells;
   if($format eq '--pretty'){
-    my %auto = map {chomp; s/^(\d+)://; $_ => $1} `$winfoExec --list-auto`;
-    my %all = map {chomp; $_ => 1} `$winfoExec --list-all`;
-
     for my $cell(@parsedCells){
-      my $info = '';
-      if(defined $auto{$$cell{SSID}}){
-        $info = "[$auto{$$cell{SSID}}]";
-      }elsif(defined $all{$$cell{SSID}}){
-        $info = '--'
-      }
       $msg .= trimPad($$cell{SSID},       20) . " | " .
               trimPad($$cell{QUALITY},     4) . " | " .
               trimPad($$cell{ENCRYPTION},  4) . " | " .
               trimPad($$cell{MODE},        9) . " | " .
-              trimPad($info,               5) . "\n";
+              trimPad($$cell{NOTE},        9) . "\n";
     }
   }elsif($format eq '--ssids'){
     for my $cell(@parsedCells){
