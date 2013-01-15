@@ -8,7 +8,7 @@ my $autoConf = "$ENV{HOME}/wifi-auto.conf";
 my $quotedStr = '"(?:[^"]|"")*"';
 my $unquotedStr = '[^ \t"]*';
 my $str = "(?:$quotedStr|$unquotedStr)";
-my $lineRegex = qr/^\s*($str)\s*($str)\s*($str)\s*($str)\s*$/;
+my $lineRegex = qr/^\s*($str)\s*($str)\s*($str)\s*($str)\s*\n$/;
 
 my $wscanExec = "wscan";
 my $validEncs = "wep|wpa|none";
