@@ -5,7 +5,7 @@ use warnings;
 my $winfoExec = 'winfo';
 
 sub main(@){
-  my %auto = map {/^(\d+):(.*)$/; $2 => $1} `$winfoExec --list-auto`;
+  my %auto = map {/^(\d+):(.*)$/; $2 => $1} `$winfoExec --exact --list-auto`;
   my $guess;
   my $autoPriority;
   for my $ssid(`wscan 3 --retry --ssids`){
