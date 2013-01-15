@@ -22,8 +22,10 @@ my $usage = "Usage:
     without regard to case and with '_' matching ' ' or '_'.
   $0 --list-auto
     prints all auto-connectable SSIDs in config and their priority
+    SSIDs are printed in lowercase, with ' ' replaced with '_'
   $0 --list|--list-all
     prints all SSIDs in config
+    SSIDs are printed in lowercase, with ' ' replaced with '_'
 ";
 
 my $format = ''
@@ -109,10 +111,10 @@ sub main(@){
   my %autos = map{chomp; ($_ => $count++)} `cat $autoConf 2>/dev/null`;
 
   if(defined $listAll){
-    print join("\n", keys %entries) . "\n";
+    print join("\n", keys %fuzzyEntries) . "\n";
   }elsif(defined $listAuto){
     for my $ssid(sort {$autos{$a} <=> $autos{$b}} keys %autos){
-      print "$autos{$ssid}:$ssid\n";
+      print "$autos{$ssid}:" . fuzzy($ssid) . "\n";
     }
   }elsif(defined $targetSSID){
     my $entry = $entries{$targetSSID};
