@@ -3,10 +3,7 @@ _netssids(){
   cur="${COMP_WORDS[COMP_CWORD]}"
 
   if [ ${#COMP_WORDS[@]} == 2 ]; then
-    ssids=`winfo --list`
-    cur="${cur,,}" #lowercase
-    ssids="${ssids,,}" #lowercase
-    ssids="$ssids "`wscan -l --ssids 2>/dev/null`
+    ssids=`winfo --list 2>/dev/null; wscan -l --fuzzy 2>/dev/null`
     COMPREPLY=( $(compgen -W "$ssids" -- $cur) )
   else
     COMPREPLY=()
