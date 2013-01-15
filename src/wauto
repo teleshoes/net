@@ -2,18 +2,25 @@
 use strict;
 use warnings;
 
-my $wautoPidfile = '/tmp/wauto-pidfile';
-if(-e $wautoPidfile){
-  system "kill -9 `cat $wautoPidfile` >/dev/null 2>/dev/null";
-}
-system "echo $$ > $wautoPidfile";
+my $usage = "Usage: $0\n";
 
-system "wconnect", "-d";
-my $ssid = `wguessid`;
-if($? == 0){
-  chomp $ssid;
-  print "SSID: $ssid\n";
-  system "wconnect", $ssid;
-}else{
-  die "No suitable ssid found\n";
+sub main(@){
+  die $usage if @_ > 0;
+  my $wautoPidfile = '/tmp/wauto-pidfile';
+  if(-e $wautoPidfile){
+    system "kill -9 `cat $wautoPidfile` >/dev/null 2>/dev/null";
+  }
+  system "echo $$ > $wautoPidfile";
+
+  system "wconnect", "-d";
+  my $ssid = `wguessid`;
+  if($? == 0){
+    chomp $ssid;
+    print "SSID: $ssid\n";
+    system "wconnect", $ssid;
+  }else{
+    die "No suitable ssid found\n";
+  }
 }
+
+&main(@ARGV);
