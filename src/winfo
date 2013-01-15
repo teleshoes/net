@@ -15,14 +15,16 @@ my $encDefault = 'none';
 my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
 my $modeDefault = 'managed';
 
-my $usage = "Usage:\n"
-  . "  $0 SSID\n"
-  . "    print ssid, enc, key, mode, and auto for a given SSID\n"
-  . "  $0 --list-auto\n"
-  . "    prints all auto-connectable SSIDs in config and their priority\n"
-  . "  $0 --list|--list-all\n"
-  . "    prints all SSIDs in config\n"
-;
+my $usage = "Usage:
+  $0 SSID
+    print SSID, enc, key, mode, and auto for a given SSID
+    prints the exact SSID, but matches it to the argument
+    without regard to case and with '_' matching ' ' or '_'.
+  $0 --list-auto
+    prints all auto-connectable SSIDs in config and their priority
+  $0 --list|--list-all
+    prints all SSIDs in config
+";
 
 my $format = ''
   . "Entries are one per line:\n"
@@ -66,10 +68,16 @@ sub parseLine($){
     }elsif($mode !~ /^($validModes)$/i){
       dieConfig $line, "Error: invalid: MODE $mode\n";
     }
-    return ($ssid, $enc, $key, $mode);
+    return [$ssid, $enc, $key, $mode];
   }else{
     dieConfig $line;
   }
+}
+sub fuzzy($){
+  my $s = shift;
+  $s = lc $s;
+  $s =~ tr/ /_/;
+  return $s;
 }
 
 sub main(@){
@@ -85,17 +93,17 @@ sub main(@){
   }
 
   my %entries;
-  my %lcEntries;
+  my %fuzzyEntries;
   open FH, "< $netConf" or die "Could not open $netConf for reading\n";
-  my $line;
-  while($line = <FH>){
-    next if $line =~ /^\s*(#|$)/;
-    chomp $line;
-    my ($ssid, $enc, $key, $mode) = parseLine $line;
-    $entries{$ssid} = [$ssid, $enc, $key, $mode];
-    $lcEntries{lc $ssid} = [$ssid, $enc, $key, $mode];
-  }
+  my @lines = <FH>;
   close FH;
+  for my $line(@lines){
+    next if $line =~ /^\s*(#|$)/;
+    my $entry = parseLine $line;
+    my $ssid = $$entry[0];
+    $entries{$ssid} = $entry;
+    $fuzzyEntries{fuzzy($ssid)} = $entry;
+  }
 
   my $count = 1;
   my %autos = map{chomp; ($_ => $count++)} `cat $autoConf 2>/dev/null`;
@@ -107,7 +115,8 @@ sub main(@){
       print "$autos{$ssid}:$ssid\n";
     }
   }elsif(defined $targetSSID){
-    my $entry = $entries{$targetSSID} || $lcEntries{lc $targetSSID};
+    my $entry = $entries{$targetSSID};
+    $entry = $fuzzyEntries{fuzzy $targetSSID} if not defined $entry;
     if(defined $entry){
       my ($ssid, $enc, $key, $mode) = @{$entry};
       my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
