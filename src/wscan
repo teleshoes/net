@@ -7,7 +7,7 @@ my $dev = `ifdev wlan`;
 chomp $dev;
 my $winfoExec = 'winfo';
 
-my $formats = join "|", qw(--pretty --ssids);
+my $formats = join "|", qw(--pretty --ssids --fuzzy);
 
 my $usage = "Usage:
   $0 [--now] [--retry] [$formats]
@@ -20,6 +20,7 @@ my $usage = "Usage:
   --retry retries every second forever until a scan is successful
   --pretty prints in human-readable table {default}
   --ssids prints one ssid per line
+  --fuzzy prints one ssid per line, in lowercase with ' ' replaced with '_'
 ";
 
 sub scanNow($);
@@ -143,6 +144,12 @@ sub formatScan($$){
   }elsif($format eq '--ssids'){
     for my $cell(@parsedCells){
       $msg .= "$$cell{SSID}\n";
+    }
+  }elsif($format eq '--fuzzy'){
+    for my $cell(@parsedCells){
+      my $fuzzySSID = lc $$cell{SSID};
+      $fuzzySSID =~ tr/ /_/;
+      $msg .= "$fuzzySSID\n";
     }
   }
   return $msg;
