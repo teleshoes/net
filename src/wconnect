@@ -126,9 +126,12 @@ sub main(@){
     }else{
       die "Unknown SSID: $ssidArg\n";
     }
-  }elsif(@_ <= 4){
-    ($ssid, $encType, $key, $mode) = @_;
-    die $usage if not defined $ssid or not defined $encType;
+  }elsif(@_ >= 2 and @_ <= 4){
+    $ssid = shift;
+    $encType = shift;
+    $key = shift if $encType !~ /none/i;
+    $mode = shift;
+    die $usage if @_ > 0 or not defined $ssid or not defined $encType;
     
     $mode = $modeDefault if not defined $mode;
     
