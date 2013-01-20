@@ -41,8 +41,8 @@ sub tether(){
   print "tethering...\n";
   system 'killall', '-9', 'pppd', 'wvdial';
   system "wconnect -d";
-  system 'wvdial', '-C', $CONFIG;
   system "resolv";
+  system 'wvdial', '-C', $CONFIG;
 }
 sub untether(){
   print "untethering...\n";
