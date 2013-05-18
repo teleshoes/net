@@ -6,7 +6,6 @@ my $prefix = "/usr/local/bin";
 my $bcDir = "/etc/bash_completion.d";
 
 sub runOrDie(@){
-  run @_;
   print "@_\n";
   system @_;
   die "FAILED: @_\n" if $? != 0;
