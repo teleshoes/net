@@ -39,6 +39,64 @@ my $usage = "Usage:
      disconnect
 ";
 
+sub main(@){
+  die $usage if(@_ == 1 and $_[0] =~ /^(-h|--help)$/);
+
+  if(`whoami` ne "root\n"){
+    print STDERR "rerunning as root...\n";
+    exec "sudo", "$0", @_;
+  }
+
+  die $usage if @_ > 4;
+  if(@_ == 1 and $_[0] eq '-d'){
+    disconnectWifi;
+    exit 0;
+  }
+  my ($ssid, $encType, $key, $mode);
+  if(@_ == 1){
+    my $ssidArg = shift;
+    my $winfo = `$winfoExec "$ssidArg"`;
+    if($winfo =~ /ssid:(.*)\nenc:(.*)\nkey:(.*)\nmode:(.*)\nauto:(.*)\n/){
+      ($ssid, $encType, $key, $mode) = ($1, $2, $3, $4);
+      if($ssid ne $ssidArg){
+        print "using '$ssid' instead of '$ssidArg'\n";
+      }
+    }else{
+      $winfo = `$winfoExec --scanned "$ssidArg"`;
+      if($winfo =~ /ssid:(.*)\nenc:(.*)\nmode:(.*)\n/){
+        ($ssid, $encType, $mode) = ($1, $2, $3);
+        if(lc $encType eq 'none'){
+          print "found in last scan: $ssid enc=NONE mode=$mode\n";
+          exec $0, $ssid, "NONE", $mode;
+        }
+      }
+      die "Unknown SSID: $ssidArg\n";
+    }
+  }elsif(@_ >= 2 and @_ <= 4){
+    $ssid = shift;
+    $encType = shift;
+    $key = shift if $encType !~ /none/i;
+    $mode = shift;
+    die $usage if @_ > 0 or not defined $ssid or not defined $encType;
+
+    $mode = $modeDefault if not defined $mode;
+
+    $encType = lc $encType;
+    if($encType eq 'none'){
+      die $usage if defined $key;
+    }elsif($encType =~ /^(wpa|wep)$/){
+      die $usage if not defined $key;
+    }else{
+      die $usage;
+    }
+  }else{
+    die $usage;
+  }
+
+  disconnectWifi;
+  connectWifi $ssid, $encType, $key, $mode;
+}
+
 sub run(@){
   print "exec: @_\n";
   system @_;
@@ -110,64 +168,6 @@ sub disconnectWifi(){
   run "iwconfig", $dev, "essid", "";
   run "killall", "wpa_supplicant", "dhclient";
   ifdown();
-}
-
-sub main(@){
-  die $usage if(@_ == 1 and $_[0] =~ /^(-h|--help)$/);
-
-  if(`whoami` ne "root\n"){
-    print STDERR "rerunning as root...\n";
-    exec "sudo", "$0", @_;
-  }
-
-  die $usage if @_ > 4;
-  if(@_ == 1 and $_[0] eq '-d'){
-    disconnectWifi;
-    exit 0;
-  }
-  my ($ssid, $encType, $key, $mode);
-  if(@_ == 1){
-    my $ssidArg = shift;
-    my $winfo = `$winfoExec "$ssidArg"`;
-    if($winfo =~ /ssid:(.*)\nenc:(.*)\nkey:(.*)\nmode:(.*)\nauto:(.*)\n/){
-      ($ssid, $encType, $key, $mode) = ($1, $2, $3, $4);
-      if($ssid ne $ssidArg){
-        print "using '$ssid' instead of '$ssidArg'\n";
-      }
-    }else{
-      $winfo = `$winfoExec --scanned "$ssidArg"`;
-      if($winfo =~ /ssid:(.*)\nenc:(.*)\nmode:(.*)\n/){
-        ($ssid, $encType, $mode) = ($1, $2, $3);
-        if(lc $encType eq 'none'){
-          print "found in last scan: $ssid enc=NONE mode=$mode\n";
-          exec $0, $ssid, "NONE", $mode;
-        }
-      }
-      die "Unknown SSID: $ssidArg\n";
-    }
-  }elsif(@_ >= 2 and @_ <= 4){
-    $ssid = shift;
-    $encType = shift;
-    $key = shift if $encType !~ /none/i;
-    $mode = shift;
-    die $usage if @_ > 0 or not defined $ssid or not defined $encType;
-    
-    $mode = $modeDefault if not defined $mode;
-    
-    $encType = lc $encType;
-    if($encType eq 'none'){
-      die $usage if defined $key;
-    }elsif($encType =~ /^(wpa|wep)$/){
-      die $usage if not defined $key;
-    }else{
-      die $usage;
-    }
-  }else{
-    die $usage;
-  }
-
-  disconnectWifi;
-  connectWifi $ssid, $encType, $key, $mode;
 }
 
 &main(@ARGV);
