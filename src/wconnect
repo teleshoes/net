@@ -9,6 +9,14 @@ my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
 my $wifiModule = 'iwlwifi';
 
+sub run(@);
+sub reloadModule();
+sub ifup();
+sub ifdown();
+sub iwconfig($$$$);
+sub connectWifi($$$$);
+sub disconnectWifi();
+
 my $dev = `ifdev wlan`;
 chomp $dev;
 
@@ -30,13 +38,6 @@ my $usage = "Usage:
   $0 -d
      disconnect
 ";
-
-die $usage if(@ARGV == 1 and $ARGV[0] =~ /^(-h|--help)$/);
-
-if(`whoami` ne "root\n"){
-  print STDERR "rerunning as root...\n";
-  exec "sudo", "$0", @ARGV;
-}
 
 sub run(@){
   print "exec: @_\n";
@@ -112,6 +113,13 @@ sub disconnectWifi(){
 }
 
 sub main(@){
+  die $usage if(@_ == 1 and $_[0] =~ /^(-h|--help)$/);
+
+  if(`whoami` ne "root\n"){
+    print STDERR "rerunning as root...\n";
+    exec "sudo", "$0", @_;
+  }
+
   die $usage if @_ > 4;
   if(@_ == 1 and $_[0] eq '-d'){
     disconnectWifi;
@@ -161,4 +169,5 @@ sub main(@){
   disconnectWifi;
   connectWifi $ssid, $encType, $key, $mode;
 }
+
 &main(@ARGV);
