@@ -16,6 +16,7 @@ sub ifdown($);
 sub iwconfig($$$$$);
 sub connectWifi($$$$$);
 sub disconnectWifi($);
+sub rfkillUnblockWlan();
 
 my $usage = "Usage:
   $0 -h|--help
@@ -112,6 +113,7 @@ sub reloadModule(){
 
 sub ifup($){
   my $dev = shift;
+  rfkillUnblockWlan();
   run "ifconfig", $dev, "up";
 }
 sub ifdown($){
@@ -171,6 +173,15 @@ sub disconnectWifi($){
   run "iwconfig", $dev, "essid", "";
   run "killall", "wpa_supplicant", "dhclient";
   ifdown $dev;
+}
+
+sub rfkillUnblockWlan(){
+  for my $rfkill(`ls -d1 /sys/class/rfkill/rfkill*`){
+    chomp $rfkill;
+    if(`cat $rfkill/type` eq "wlan\n"){
+      run "echo 1 > $rfkill/state";
+    }
+  }
 }
 
 &main(@ARGV);
