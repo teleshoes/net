@@ -11,14 +11,11 @@ my $wifiModule = 'iwlwifi';
 
 sub run(@);
 sub reloadModule();
-sub ifup();
-sub ifdown();
-sub iwconfig($$$$);
-sub connectWifi($$$$);
-sub disconnectWifi();
-
-my $dev = `ifdev wlan`;
-chomp $dev;
+sub ifup($);
+sub ifdown($);
+sub iwconfig($$$$$);
+sub connectWifi($$$$$);
+sub disconnectWifi($);
 
 my $usage = "Usage:
   $0 -h|--help
@@ -47,9 +44,12 @@ sub main(@){
     exec "sudo", "$0", @_;
   }
 
+  my $dev = `ifdev wlan`;
+  chomp $dev;
+
   die $usage if @_ > 4;
   if(@_ == 1 and $_[0] eq '-d'){
-    disconnectWifi;
+    disconnectWifi $dev;
     exit 0;
   }
   my ($ssid, $encType, $key, $mode);
@@ -93,8 +93,8 @@ sub main(@){
     die $usage;
   }
 
-  disconnectWifi;
-  connectWifi $ssid, $encType, $key, $mode;
+  disconnectWifi $dev;
+  connectWifi $dev, $ssid, $encType, $key, $mode;
 }
 
 sub run(@){
@@ -110,15 +110,17 @@ sub reloadModule(){
   print "\n\n";
 }
 
-sub ifup(){
+sub ifup($){
+  my $dev = shift;
   run "ifconfig", $dev, "up";
 }
-sub ifdown(){
+sub ifdown($){
+  my $dev = shift;
   run "ifconfig", $dev, "down";
 }
 
-sub iwconfig($$$$){
-  my ($ssid, $key, $channel, $mode) = @_;
+sub iwconfig($$$$$){
+  my ($dev, $ssid, $key, $channel, $mode) = @_;
   if($mode =~ /ad-hoc/){
     reloadModule();
   }
@@ -129,16 +131,16 @@ sub iwconfig($$$$){
     "mode", $mode
   );
   print "\n\nrunning iwconfig while its down-\n";
-  ifdown();
+  ifdown $dev;
   run @iwconfig;
   print "running iwconfig while its up-\n";
-  ifup();
+  ifup $dev;
   run @iwconfig;
   print "\n\n";
 }
 
-sub connectWifi($$$$){
-  my ($ssid, $encType, $key, $mode) = @_;
+sub connectWifi($$$$$){
+  my ($dev, $ssid, $encType, $key, $mode) = @_;
   system "echo $ssid > $lastSSIDFile";
   if(lc $encType eq 'wpa'){
     my $conf = ''
@@ -156,18 +158,19 @@ sub connectWifi($$$$){
     run "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
     run "sleep", "1";
   }elsif(lc $encType eq 'wep'){
-    iwconfig $ssid, $key, 'auto', $mode;
+    iwconfig $dev, $ssid, $key, 'auto', $mode;
   }elsif(lc $encType eq 'none'){
-    iwconfig $ssid, 'off', 'auto', $mode;
+    iwconfig $dev, $ssid, 'off', 'auto', $mode;
   }
 
   run "resolv";
   run "dhclient", "$dev";
 }
-sub disconnectWifi(){
+sub disconnectWifi($){
+  my $dev = shift;
   run "iwconfig", $dev, "essid", "";
   run "killall", "wpa_supplicant", "dhclient";
-  ifdown();
+  ifdown $dev;
 }
 
 &main(@ARGV);
