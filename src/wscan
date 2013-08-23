@@ -1,8 +1,9 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use Time::HiRes qw(time);
 
-my $lastScanFile = "/tmp/wscan-last";
+my $lastScanFilePrefix = "/tmp/wscan-last-";
 my $dev = `ifdev wlan`;
 chomp $dev;
 my $winfoExec = 'winfo';
@@ -38,6 +39,9 @@ sub scanNow($);
 sub scanLast();
 sub scanRecent($$);
 
+sub getLastScanFile();
+sub attemptClearLastScanFiles();
+sub newLastScanFile();
 sub formatScan($$);
 sub formatCell($$);
 sub cellSort($$);
@@ -87,6 +91,8 @@ sub scanNow($){
   
   exit 1 if $? != 0;
   if($iwlist =~ s/^$dev\s*Scan completed :\n//){
+    attemptClearLastScanFiles();
+    my $lastScanFile = newLastScanFile();
     open FH, "> $lastScanFile";
     print FH $iwlist;
     close FH;
@@ -94,7 +100,8 @@ sub scanNow($){
   return $iwlist;
 }
 sub scanLast(){
-  if(-e $lastScanFile){
+  my $lastScanFile = getLastScanFile();
+  if(defined $lastScanFile and -e $lastScanFile){
     return `cat $lastScanFile`;
   }else{
     die "No scan file exists\n";
@@ -104,7 +111,8 @@ sub scanRecent($$){
   my $delay = shift;
   my $retry = shift;
   my $scanDate = 0;
-  if(-e $lastScanFile){
+  my $lastScanFile = getLastScanFile();
+  if(defined $lastScanFile and -e $lastScanFile){
     $scanDate = `stat --format %Y $lastScanFile`;
     chomp $scanDate;
     $scanDate = 0 if not $scanDate =~ /^\d+$/;
@@ -125,6 +133,17 @@ sub scanRecent($$){
   exit 0;
 }
 
+sub getLastScanFile(){
+  my @files = `ls $lastScanFilePrefix*`;
+  map {chomp} @files;
+  return @files == 0 ? undef : $files[-1];
+}
+sub attemptClearLastScanFiles(){
+  system "rm -f $lastScanFilePrefix* 2>/dev/null";
+}
+sub newLastScanFile(){
+  return $lastScanFilePrefix . int(time * 1000);
+}
 
 sub formatScan($$){
   my $iwlist = shift;
