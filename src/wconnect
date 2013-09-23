@@ -7,7 +7,7 @@ my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $lastSSIDFile = '/tmp/last-ssid';
 my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
-my @wifiModules = qw(iwlwifi);
+my @wifiModules = qw(iwldvm iwlwifi);
 
 sub run(@);
 sub reloadModule();
