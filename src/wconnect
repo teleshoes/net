@@ -126,6 +126,7 @@ sub ifdown($){
 sub iwconfig($$$$$){
   my ($dev, $ssid, $key, $channel, $mode) = @_;
   if($mode =~ /ad-hoc/){
+    ifdown $dev;
     reloadModule();
   }
   my @iwconfig = ("iwconfig", $dev,
