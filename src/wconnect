@@ -7,7 +7,7 @@ my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $lastSSIDFile = '/tmp/last-ssid';
 my $winfoExec = 'winfo';
 my $modeDefault = 'managed';
-my $wifiModule = 'iwlwifi';
+my @wifiModules = qw(iwlwifi);
 
 sub run(@);
 sub reloadModule();
@@ -104,9 +104,11 @@ sub run(@){
 }
 
 sub reloadModule(){
-  print "\n\nreloading $wifiModule as a workaround\n";
-  run "modprobe", "-r", $wifiModule;
-  run "modprobe", $wifiModule;
+  print "\n\nreloading modules as a workaround: @wifiModules\n";
+  run "modprobe", "-r", @wifiModules;
+  for my $mod(@wifiModules){
+    run "modprobe", $mod;
+  }
   run "sleep 0.5";
   print "\n\n";
 }
