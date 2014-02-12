@@ -171,6 +171,8 @@ sub main(@){
       my ($ssid, $enc, $key, $mode) = @{$entry};
       my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
       print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
+    }else{
+      print STDERR "SSID NOT FOUND: $targetSSID\n";
     }
   }
 }
