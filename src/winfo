@@ -15,7 +15,7 @@ my $validEncs = "wep|wpa|none";
 my $encDefault = 'none';
 my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
 my $modeDefault = 'managed';
-my $okAtts = join "|", qw( );
+my $okAtts = join "|", qw( driver );
 
 my $usage = "Usage:
   $0 [--exact] SSID
