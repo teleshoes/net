@@ -15,6 +15,7 @@ my $validEncs = "wep|wpa|none";
 my $encDefault = 'none';
 my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
 my $modeDefault = 'managed';
+my $okAtts = join "|", qw( );
 
 my $usage = "Usage:
   $0 [--exact] SSID
@@ -31,12 +32,18 @@ my $usage = "Usage:
   $0 [--exact] --list|--list-all
     prints all SSIDs in config
     SSIDs are printed in lowercase, with ' ' replaced with '_'
+  $0 [--exact] --att=ATT_NAME
+    find 'ATT_NAME=' line in $netConf
+    print the value if it is present, or nothing if it is absent
+    valid ATT_NAMEs: $okAtts
 
   --exact  Always print exact ssid, and match ssid exactly
 ";
 
 my $format = ''
-  . "Entries are one per line:\n"
+  . "Lines are either attributes or wireless entries\n"
+  . "Valid attributes: $okAtts\n"
+  . "Wireless Entries are one per line:\n"
   . "SSID ENC KEY MODE\n"
   . "Attributes are whitespace-separated, doublequoted strings\n"
   . " any amount of leading and trailing whitespace/tabs is permitted\n"
@@ -92,7 +99,7 @@ sub fuzzy($){
 sub main(@){
   my $exact = 0;
   $exact = shift if @_ >1 and $_[0] eq '--exact';
-  my ($targetSSID, $scanned, $listAll, $listAuto);
+  my ($targetSSID, $scanned, $listAll, $listAuto, $att);
   if(@_ == 1 and $_[0] =~ /^(--list|--list-all)$/){
     $listAll = 1;
   }elsif(@_ == 1 and $_[0] eq '--list-auto'){
@@ -100,6 +107,9 @@ sub main(@){
   }elsif(@_ == 2 and $_[0] eq '--scanned'){
     $scanned = shift;
     $targetSSID = shift;
+  }elsif(@_ == 1 and $_[0] =~ /^--att=($okAtts)$/){
+    shift;
+    $att = $1;
   }elsif(@_ == 1){
     $targetSSID = shift;
   }else{
@@ -108,15 +118,25 @@ sub main(@){
 
   my %entries;
   my %fuzzyEntries;
+  my %attributes;
   open FH, "< $netConf" or die "Could not open $netConf for reading\n";
   my @lines = <FH>;
   close FH;
   for my $line(@lines){
     next if $line =~ /^\s*(#|$)/;
+    if($line =~ /^\s*($okAtts)\s*=\s*(.*?)\s*$/){
+      $attributes{$1} = $2;
+      next;
+    }
     my $entry = parseLine $line;
     my $ssid = $$entry[0];
     $entries{$ssid} = $entry;
     $fuzzyEntries{fuzzy($ssid)} = $entry;
+  }
+
+  if(defined $att){
+    print "$attributes{$att}\n" if defined $attributes{$att};
+    exit 0;
   }
 
   my $count = 1;
