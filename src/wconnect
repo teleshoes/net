@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $wpaDriver = 'nl80211';
+my $wpaDriver = 'wext';
 my $wpaConf = '/tmp/wpa_supplicant.conf';
 my $lastSSIDFile = '/tmp/last-ssid';
 my $winfoExec = 'winfo';
