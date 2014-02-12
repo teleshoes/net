@@ -14,7 +14,7 @@ sub reloadModule();
 sub ifup($);
 sub ifdown($);
 sub iwconfig($$$$$);
-sub connectWifi($$$$$);
+sub connectWifi($$$$$$);
 sub disconnectWifi($);
 sub rfkillUnblockWlan();
 
@@ -95,7 +95,7 @@ sub main(@){
   }
 
   disconnectWifi $dev;
-  connectWifi $dev, $ssid, $encType, $key, $mode;
+  connectWifi $dev, $ssid, $encType, $key, $mode, $wpaDriver;
 }
 
 sub run(@){
@@ -144,8 +144,8 @@ sub iwconfig($$$$$){
   print "\n\n";
 }
 
-sub connectWifi($$$$$){
-  my ($dev, $ssid, $encType, $key, $mode) = @_;
+sub connectWifi($$$$$$){
+  my ($dev, $ssid, $encType, $key, $mode, $driver) = @_;
   system "echo $ssid > $lastSSIDFile";
   if(lc $encType eq 'wpa'){
     my $conf = ''
@@ -160,7 +160,7 @@ sub connectWifi($$$$$){
     print FH $conf;
     close FH;
     run "ifconfig", $dev, "up";
-    run "wpa_supplicant", "-B", "-D$wpaDriver", "-i$dev", "-c$wpaConf";
+    run "wpa_supplicant", "-B", "-D$driver", "-i$dev", "-c$wpaConf";
     run "sleep", "1";
   }elsif(lc $encType eq 'wep'){
     iwconfig $dev, $ssid, $key, 'auto', $mode;
