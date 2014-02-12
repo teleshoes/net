@@ -94,6 +94,11 @@ sub main(@){
     die $usage;
   }
 
+  my $winfoDriver = `$winfoExec --att=driver`;
+  if($winfoDriver =~ /([a-zA-Z0-9_-]+)/){
+    $wpaDriver = $1;
+  }
+
   disconnectWifi $dev;
   connectWifi $dev, $ssid, $encType, $key, $mode, $wpaDriver;
 }
