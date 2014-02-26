@@ -36,6 +36,10 @@ my $usage = "Usage:
     find 'ATT_NAME=' line in $netConf
     print the value if it is present, or nothing if it is absent
     valid ATT_NAMEs: $okAtts
+      driver: the driver for wpa_supplicant {see wpa_supplicant -h}
+      dev:    a comma-separated list of prefix:driver pairs
+              these are read by ifdev and override using ifconfig
+              e.g.:   dev=wlan:eth4,eth:eth5
 
   --exact  Always print exact ssid, and match ssid exactly
 ";
