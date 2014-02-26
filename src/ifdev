@@ -12,6 +12,21 @@ sub main(@){
   my $dev = shift;
   die $usage if not defined $dev;
 
+  my $winfoDev = `winfo --att=dev`;
+  chomp $winfoDev;
+  $winfoDev =~ s/\s+//g;
+  my @devPairs = split /,/, $winfoDev;
+  for my $pair(@devPairs){
+    if($pair !~ /^(\w+):(\w+)$/){
+      die "Malformed device pair in dev att {'prefix:device'}: '$pair'\n";
+    }
+    my($prefix, $device) = ($1, $2);
+    if($prefix eq $dev){
+      print "$device\n";
+      exit 0;
+    }
+  }
+
   my @ifconfig = `ifconfig -a`;
 
   for my $line(@ifconfig){
