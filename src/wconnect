@@ -179,7 +179,8 @@ sub connectWifi($$$$$$){
 sub disconnectWifi($){
   my $dev = shift;
   run "iwconfig", $dev, "essid", "";
-  run "killall", "wpa_supplicant", "dhclient";
+  run "pkill", "-f", "^wpa_supplicant.*-i$dev.*\$";
+  run "pkill", "-f", "^dhclient $dev\$";
   ifdown $dev;
 }
 
