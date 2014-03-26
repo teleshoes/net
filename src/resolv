@@ -15,8 +15,10 @@
 use strict;
 use warnings;
 
+my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
+
 my $targetFile = '/etc/resolv.conf';
-my $configDir = "$ENV{HOME}/resolv";
+my $configDir = "$home/resolv";
 
 sub getAvailableConfigs(){
   my @configs;
