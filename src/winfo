@@ -10,8 +10,8 @@ sub fuzzy($);
 
 my $home = defined $ENV{HOME} ? $ENV{HOME} : '';
 
-my $netConf = selectFile ("$home/wifi.conf");
-my $autoConf = selectFile ("$home/wifi-auto.conf");
+my $netConf = selectFile ("$home/wifi.conf", "/etc/wifi.conf");
+my $autoConf = selectFile ("$home/wifi-auto.conf", "/etc/wifi-auto.conf");
 
 my $quotedStr = '"(?:[^"]|"")*"';
 my $unquotedStr = '[^ \t"]*';
