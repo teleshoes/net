@@ -43,6 +43,11 @@ sub replaceResolv($){
 }
 
 sub main(@){
+  if(not -d $configDir){
+    print STDERR "$configDir does not exist, skipping resolv\n";
+    exit 0;
+  }
+
   my $conf = shift;
   $conf = 'default' if not defined $conf;
   if($conf eq '-d'){
