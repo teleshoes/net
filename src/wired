@@ -25,7 +25,7 @@ sub run(@){
 print "disconnecting wired\n";
 run "wconnect", "-d";
 run "ifconfig", $dev, "down";
-run "killall", "dhclient";
+run "pkill", "-f", "^dhclient $dev\$";
 if($arg eq 'on'){
   print "\n\nconnecting wired\n";
   run "ifconfig", $dev, "up";
