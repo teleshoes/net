@@ -2,6 +2,11 @@
 use strict;
 use warnings;
 
+sub dieConfig($;$);
+sub unquote($);
+sub parseLine($);
+sub fuzzy($);
+
 my $netConf = "$ENV{HOME}/wifi.conf";
 my $autoConf = "$ENV{HOME}/wifi-auto.conf";
 
@@ -63,42 +68,6 @@ my $format = ''
   . "MODE: <optional> wifi mode {default = \"$modeDefault\"}\n"
   . "      one of $validModes\n"
 ;
-
-sub dieConfig($;$){
-  my $line = shift();
-  my $reason = shift() || '';
-  die "Malformed line in $netConf\n$format\nLine: '$line'\n$reason\n";
-}
-sub unquote($){
-  my $s = shift;
-  $s =~ s/^"|"$//g;
-  $s =~ s/""/"/g;
-  return $s;
-}
-sub parseLine($){
-  my $line = shift;
-  if($line =~ $lineRegex){
-    my ($ssid, $enc, $key, $mode) = map {unquote $_} ($1, $2, $3, $4);
-    $enc = $encDefault if $enc eq '';
-    $mode = $modeDefault if $mode eq '';
-    if(length $ssid == 0){
-      dieConfig $line, "Error: SSID is empty";
-    }elsif($enc !~ /^($validEncs)$/i){
-      dieConfig $line, "Error: invalid: ENC $enc\n";
-    }elsif($mode !~ /^($validModes)$/i){
-      dieConfig $line, "Error: invalid: MODE $mode\n";
-    }
-    return [$ssid, $enc, $key, $mode];
-  }else{
-    dieConfig $line;
-  }
-}
-sub fuzzy($){
-  my $s = shift;
-  $s = lc $s;
-  $s =~ tr/ /_/;
-  return $s;
-}
 
 sub main(@){
   my $exact = 0;
@@ -179,6 +148,42 @@ sub main(@){
       print STDERR "SSID NOT FOUND: $targetSSID\n";
     }
   }
+}
+
+sub dieConfig($;$){
+  my $line = shift();
+  my $reason = shift() || '';
+  die "Malformed line in $netConf\n$format\nLine: '$line'\n$reason\n";
+}
+sub unquote($){
+  my $s = shift;
+  $s =~ s/^"|"$//g;
+  $s =~ s/""/"/g;
+  return $s;
+}
+sub parseLine($){
+  my $line = shift;
+  if($line =~ $lineRegex){
+    my ($ssid, $enc, $key, $mode) = map {unquote $_} ($1, $2, $3, $4);
+    $enc = $encDefault if $enc eq '';
+    $mode = $modeDefault if $mode eq '';
+    if(length $ssid == 0){
+      dieConfig $line, "Error: SSID is empty";
+    }elsif($enc !~ /^($validEncs)$/i){
+      dieConfig $line, "Error: invalid: ENC $enc\n";
+    }elsif($mode !~ /^($validModes)$/i){
+      dieConfig $line, "Error: invalid: MODE $mode\n";
+    }
+    return [$ssid, $enc, $key, $mode];
+  }else{
+    dieConfig $line;
+  }
+}
+sub fuzzy($){
+  my $s = shift;
+  $s = lc $s;
+  $s =~ tr/ /_/;
+  return $s;
 }
 
 &main(@ARGV);
