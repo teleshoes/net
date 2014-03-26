@@ -2,13 +2,16 @@
 use strict;
 use warnings;
 
+sub selectFile(@);
 sub dieConfig($;$);
 sub unquote($);
 sub parseLine($);
 sub fuzzy($);
 
-my $netConf = "$ENV{HOME}/wifi.conf";
-my $autoConf = "$ENV{HOME}/wifi-auto.conf";
+my $home = defined $ENV{HOME} ? $ENV{HOME} : '';
+
+my $netConf = selectFile ("$home/wifi.conf");
+my $autoConf = selectFile ("$home/wifi-auto.conf");
 
 my $quotedStr = '"(?:[^"]|"")*"';
 my $unquotedStr = '[^ \t"]*';
@@ -184,6 +187,11 @@ sub fuzzy($){
   $s = lc $s;
   $s =~ tr/ /_/;
   return $s;
+}
+sub selectFile(@){
+  for my $file(@_){
+    return $file if -e $file;
+  }
 }
 
 &main(@ARGV);
