@@ -32,7 +32,7 @@ sub getDev(){
   my $netstat = `ifconfig -s`;
 
   for my $dev(@devs){
-    my $device = `ifdev $dev`;
+    my $device = `ifdev $dev 2>/dev/null`;
     chomp $device;
     if($? == 0 and $netstat =~ /^$device /m){
       if($dev eq 'wlan'){
