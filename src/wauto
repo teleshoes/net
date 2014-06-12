@@ -2,10 +2,18 @@
 use strict;
 use warnings;
 
-my $usage = "Usage: $0\n";
+my $usage = "Usage: $0 [TEST_URL]\n";
 
 sub main(@){
+  my $url = shift;
   die $usage if @_ > 0;
+  if(defined $url){
+    my $test = `execPing --attempts=1 $url --test`;
+    if($test =~ /^ok: \Q$url\E$/){
+      print "'$url' test succeeded, skipping wauto\n";
+      exit 0;
+    }
+  }
   my $wautoPidfile = '/tmp/wauto-pidfile';
   if(-e $wautoPidfile){
     system "kill -9 `cat $wautoPidfile` >/dev/null 2>/dev/null";
