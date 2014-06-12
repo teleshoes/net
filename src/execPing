@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-sub attemptPing($$$);
+sub attemptPing($$$$);
 
 my $defaultDeadline = 1;
 my $defaultDelay = 1;
@@ -25,11 +25,15 @@ my $usage = "Usage:
     --ipmagic
       interpret URL as an ipmagic conf, and use `ipmagic URL --ip` as the url
       also, if the IP is not ping-able, tries SSH as a fallback
+
+    -q|--quiet
+      print less to STDOUT and STDERR
 ";
 
 sub main(@){
   my ($deadline, $delay, $timeout) =
     ($defaultDeadline, $defaultDelay, $defaultTimeout);
+  my $quiet = 0;
   my $useIpmagic = 0;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
@@ -41,6 +45,8 @@ sub main(@){
       $timeout = $1;
     }elsif($opt =~ /^--ipmagic$/){
       $useIpmagic = 1;
+    }elsif($opt =~ /^(-q|--quiet)$/){
+      $quiet = 1;
     }else{
       die $usage;
     }
@@ -53,25 +59,25 @@ sub main(@){
   die $usage if not defined $url or not defined $exec;
 
   my $start = time;
-  while(not attemptPing $url, $useIpmagic, $deadline){
+  while(not attemptPing $url, $useIpmagic, $deadline, $quiet){
     if($timeout > 0 and time - $start > $timeout){
       die "timeout reached, exiting\n";
     }
-    print STDERR "ping failed, retrying...\n";
+    print STDERR "ping failed, retrying...\n" if not $quiet;
     sleep $delay;
   }
 
   exec $exec, @args;
 }
 
-sub attemptPing($$$){
-  my ($url, $useIpmagic, $deadline) = @_;
+sub attemptPing($$$$){
+  my ($url, $useIpmagic, $deadline, $quiet) = @_;
   my $ipmagicConf;
   if($useIpmagic){
     $ipmagicConf = $url;
     $url = `ipmagic "$ipmagicConf" --ip`;
     chomp $url;
-    print "Using \"$url\"\n";
+    print "Using \"$url\"\n" if not $quiet;
   }
   $url =~ s/'/'\\''/g;
   system "ping -c 1 -w $deadline '$url' >/dev/null 2>/dev/null";
