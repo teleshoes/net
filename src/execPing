@@ -9,6 +9,9 @@ my $defaultDelay = 1;
 my $defaultTimeout = 0;
 
 my $usage = "Usage:
+  $0 [OPTS] URL --test
+    Tests if URL is ping-able. Prints \"ok: URL\" or \"failed: URL\"
+
   $0 [OPTS] URL EXEC [ARG ARG ..]
     Ensure that URL is ping-able before running \"EXEC ARG ARG ..\"
 
@@ -53,21 +56,32 @@ sub main(@){
   }
 
   my $url = shift;
+  my $test = shift if @_ == 1 and $_[0] =~ /^(--test)$/;
   my $exec = shift;
   my @args = @_;
 
-  die $usage if not defined $url or not defined $exec;
+  die $usage if not defined $url or (not defined $exec and not defined $test);
 
   my $start = time;
   while(not attemptPing $url, $useIpmagic, $deadline, $quiet){
     if($timeout > 0 and time - $start > $timeout){
-      die "timeout reached, exiting\n";
+      if(defined $test){
+        print "failed: $url\n";
+        exit 1;
+      }else{
+        die "timeout reached, exiting\n";
+      }
     }
     print STDERR "ping failed, retrying...\n" if not $quiet;
     sleep $delay;
   }
 
-  exec $exec, @args;
+  if(defined $test){
+    print "ok: $url\n";
+    exit 0;
+  }else{
+    exec $exec, @args;
+  }
 }
 
 sub attemptPing($$$$){
