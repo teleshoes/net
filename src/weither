@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $usage = "Usage: $0 [TEST_URL]\n";
+
+sub main(@){
+  my $url = shift;
+  die $usage if @_ > 0;
+  if(defined $url){
+    my $test = `execPing --attempts=1 $url --test`;
+    if($test =~ /^ok: \Q$url\E$/){
+      print "'$url' test succeeded, skipping weither\n";
+      exit 0;
+    }
+  }
+  system "wired";
+  system "wauto" if $? != 0;
+  exit $? >> 8;
+}
+
+&main(@ARGV);
