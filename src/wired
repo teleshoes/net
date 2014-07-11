@@ -22,11 +22,18 @@ sub run(@){
   print "@_\n";
   system @_;
 }
-print "disconnecting wired\n";
+
+print "\ndisconnecting wired\n";
 run "ifconfig", $dev, "down";
 run "pkill", "-f", "^dhclient $dev\$";
+
 if($arg eq 'on'){
-  print "\n\nconnecting wired\n";
+  print "\nconnecting wired\n";
   run "ifconfig", $dev, "up";
-  run "dhclient $dev";
+  if(`cat "/sys/class/net/$dev/carrier"` == '1'){
+    run "dhclient $dev";
+  }else{
+    print STDERR "\nerror: cable is disconnected\n";
+    exit 1;
+  }
 }
