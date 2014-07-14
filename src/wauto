@@ -1,10 +1,14 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use Getopt::Long qw(GetOptionsFromArray);
 
-my $usage = "Usage: $0 [TEST_URL]\n";
+my $usage = "Usage: $0 [--wired] [TEST_URL]\n";
 
 sub main(@){
+  my $wired;
+  GetOptionsFromArray(\@_, "wired" => \$wired);
+
   my $url = shift;
   die $usage if @_ > 0;
   if(defined $url){
@@ -19,6 +23,11 @@ sub main(@){
     system "kill -9 `cat $wautoPidfile` >/dev/null 2>/dev/null";
   }
   system "echo $$ > $wautoPidfile";
+
+  if($wired){
+    system "wired";
+    exit if $? == 0;
+  }
 
   system "wconnect", "-d";
   my $ssid = `wguessid`;
