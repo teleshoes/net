@@ -29,8 +29,8 @@ sub main(@){
     exit if $? == 0;
   }
 
-  system "wconnect", "-d";
   my $ssid = `wguessid`;
+  system "wconnect", "-d";
   if($? == 0){
     chomp $ssid;
     print "SSID: $ssid\n";
