@@ -9,14 +9,20 @@ my $defaultDelay = 1;
 my $defaultTimeout = 0;
 my $defaultAttempts = 0;
 
-my $usage = "Usage:
-  $0 [OPTS] URL --test
-    Tests if URL is ping-able. Prints \"ok: URL\" or \"failed: URL\"
+my $defaultUrl = "fsf.org";
 
-  $0 [OPTS] URL EXEC [ARG ARG ..]
-    Ensure that URL is ping-able before running \"EXEC ARG ARG ..\"
+my $usage = "Usage:
+  $0 [OPTS]
+    Tests if $defaultUrl is ping-able. Prints \"ok: URL\" or \"failed: URL\"
+
+  $0 [OPTS] EXEC [ARG ARG ..]
+    Ensure that $defaultUrl is ping-able before running \"EXEC ARG ARG ..\"
+
 
   OPTS:
+    --url=URL
+      use URL instead of $defaultUrl
+
     --deadline=INTEGER     {default is $defaultDeadline}
       seconds to wait for a response for each ping
 
@@ -38,13 +44,15 @@ my $usage = "Usage:
 ";
 
 sub main(@){
-  my ($deadline, $delay, $timeout, $attempts) =
-    ($defaultDeadline, $defaultDelay, $defaultTimeout, $defaultAttempts);
+  my ($url, $deadline, $delay, $timeout, $attempts) = ($defaultUrl,
+    $defaultDeadline, $defaultDelay, $defaultTimeout, $defaultAttempts);
   my $quiet = 0;
   my $useIpmagic = 0;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
-    if($opt =~ /^--deadline=(\d+)$/){
+    if($opt =~ /^--url=(.*)$/){
+      $url = $1;
+    }elsif($opt =~ /^--deadline=(\d+)$/){
       $deadline = $1;
     }elsif($opt =~ /^--delay=(\d+)$/){
       $delay = $1;
@@ -52,21 +60,19 @@ sub main(@){
       $timeout = $1;
     }elsif($opt =~ /^--attempts=(\d+)$/){
       $attempts = $1;
-    }elsif($opt =~ /^--ipmagic$/){
-      $useIpmagic = 1;
     }elsif($opt =~ /^(-q|--quiet)$/){
       $quiet = 1;
+    }elsif($opt =~ /^--ipmagic$/){
+      $useIpmagic = 1;
     }else{
       die $usage;
     }
   }
 
-  my $url = shift;
-  my $test = shift if @_ == 1 and $_[0] =~ /^(--test)$/;
   my $exec = shift;
   my @args = @_;
 
-  die $usage if not defined $url or (not defined $exec and not defined $test);
+  my $testOnly = not defined $exec;
 
   my $start = time;
   my $count = 0;
@@ -75,7 +81,7 @@ sub main(@){
     my $isTimeout = $timeout > 0 && time - $start > $timeout;
     my $isMaxAttempts = $attempts > 0 && $count >= $attempts;
     if($isTimeout or $isMaxAttempts){
-      if(defined $test){
+      if($testOnly){
         print "failed: $url\n";
         exit 1;
       }else{
@@ -86,7 +92,7 @@ sub main(@){
     sleep $delay;
   }
 
-  if(defined $test){
+  if($testOnly){
     print "ok: $url\n";
     exit 0;
   }else{
