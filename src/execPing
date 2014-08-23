@@ -35,8 +35,9 @@ my $usage = "Usage:
     --attempts=INTEGER     {default is $defaultAttempts}
       number of times to attempt a ping, 0 means forever
 
-    --ipmagic
-      interpret URL as an ipmagic conf, and use `ipmagic URL --ip` as the url
+    --ipmagic=IPMAGIC_CONF
+      use IPMAGIC_CONF as an ipmagic config, and use
+        `ipmagic IPMAGIC_CONF --ip` as URL
       also, if the IP is not ping-able, tries SSH as a fallback
 
     -q|--quiet
@@ -47,7 +48,7 @@ sub main(@){
   my ($url, $deadline, $delay, $timeout, $attempts) = ($defaultUrl,
     $defaultDeadline, $defaultDelay, $defaultTimeout, $defaultAttempts);
   my $quiet = 0;
-  my $useIpmagic = 0;
+  my $ipmagicConf = undef;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
     if($opt =~ /^--url=(.*)$/){
@@ -62,8 +63,8 @@ sub main(@){
       $attempts = $1;
     }elsif($opt =~ /^(-q|--quiet)$/){
       $quiet = 1;
-    }elsif($opt =~ /^--ipmagic$/){
-      $useIpmagic = 1;
+    }elsif($opt =~ /^--ipmagic=(.*)$/){
+      $ipmagicConf = $1;
     }else{
       die $usage;
     }
@@ -76,7 +77,7 @@ sub main(@){
 
   my $start = time;
   my $count = 0;
-  while(not attemptPing $url, $useIpmagic, $deadline, $quiet){
+  while(not attemptPing $url, $ipmagicConf, $deadline, $quiet){
     $count++;
     my $isTimeout = $timeout > 0 && time - $start > $timeout;
     my $isMaxAttempts = $attempts > 0 && $count >= $attempts;
@@ -101,10 +102,8 @@ sub main(@){
 }
 
 sub attemptPing($$$$){
-  my ($url, $useIpmagic, $deadline, $quiet) = @_;
-  my $ipmagicConf;
-  if($useIpmagic){
-    $ipmagicConf = $url;
+  my ($url, $ipmagicConf, $deadline, $quiet) = @_;
+  if(defined $ipmagicConf){
     $url = `ipmagic "$ipmagicConf" --ip`;
     chomp $url;
     print "Using \"$url\"\n" if not $quiet;
@@ -112,7 +111,7 @@ sub attemptPing($$$$){
   $url =~ s/'/'\\''/g;
   system "ping -c 1 -w $deadline -W $deadline '$url' >/dev/null 2>/dev/null";
   my $success = $? == 0;
-  if(not $success and $useIpmagic){
+  if(not $success and defined $ipmagicConf){
     system "ipmagic", $ipmagicConf, "echo ssh $ipmagicConf success!\n";
     $success = $? == 0;
   }
