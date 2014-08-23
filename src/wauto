@@ -3,13 +3,13 @@ use strict;
 use warnings;
 use Getopt::Long qw(GetOptionsFromArray);
 
-my $usage = "Usage: $0 [--wired] [-p|--ping]\n";
+my $usage = "Usage: $0 [-w|--wired] [-p|--ping]\n";
 
 sub main(@){
   my $wired;
   my $pingTest;
   GetOptionsFromArray(\@_,
-    "wired" => \$wired,
+    "wired|w" => \$wired,
     "ping|p" => \$pingTest,
   );
 
