@@ -3,18 +3,21 @@ use strict;
 use warnings;
 use Getopt::Long qw(GetOptionsFromArray);
 
-my $usage = "Usage: $0 [--wired] [TEST_URL]\n";
+my $usage = "Usage: $0 [--wired] [-p|--ping]\n";
 
 sub main(@){
   my $wired;
-  GetOptionsFromArray(\@_, "wired" => \$wired);
+  my $pingTest;
+  GetOptionsFromArray(\@_,
+    "wired" => \$wired,
+    "ping|p" => \$pingTest,
+  );
 
-  my $url = shift;
   die $usage if @_ > 0;
-  if(defined $url){
-    my $test = `execPing --attempts=1 $url --test`;
-    if($test =~ /^ok: \Q$url\E$/){
-      print "'$url' test succeeded, skipping wauto\n";
+  if(defined $pingTest){
+    my $test = `execPing --attempts=1`;
+    if($test =~ /^ok:/){
+      print "ping test succeeded, skipping wauto\n";
       exit 0;
     }
   }
