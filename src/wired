@@ -2,20 +2,41 @@
 use strict;
 use warnings;
 
-if(`whoami` ne "root\n"){
-  print STDERR "rerunning as root...\n";
-  exec "sudo", "$0", @ARGV;
-}
+sub run(@);
 
-my $arg = shift;
-$arg = 'on' if not defined $arg;
+sub main(@){
+  if(`whoami` ne "root\n"){
+    print STDERR "rerunning as root...\n";
+    exec "sudo", "$0", @ARGV;
+  }
 
-die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
+  my $arg = shift;
+  $arg = 'on' if not defined $arg;
 
-my $dev = `ifdev eth`;
-chomp $dev;
-if($dev !~ /^eth/){
-  die "no suitable device {i.e. named eth#} found\n";
+  die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
+
+  my $dev = `ifdev eth`;
+  chomp $dev;
+  if($dev !~ /^eth/){
+    die "no suitable device {i.e. named eth#} found\n";
+  }
+
+  print "\ndisconnecting wired\n";
+  run "ifconfig", $dev, "down";
+  run "pkill", "-f", "^dhclient $dev\$";
+
+  if($arg eq 'on'){
+    print "\nconnecting wired\n";
+    run "ifconfig", $dev, "up";
+    my $carrier = `cat "/sys/class/net/$dev/carrier"`;
+    chomp $carrier;
+    if($carrier eq "1"){
+      run "dhclient $dev";
+    }else{
+      print STDERR "\nerror: cable is disconnected\n";
+      exit 1;
+    }
+  }
 }
 
 sub run(@){
@@ -23,19 +44,4 @@ sub run(@){
   system @_;
 }
 
-print "\ndisconnecting wired\n";
-run "ifconfig", $dev, "down";
-run "pkill", "-f", "^dhclient $dev\$";
-
-if($arg eq 'on'){
-  print "\nconnecting wired\n";
-  run "ifconfig", $dev, "up";
-  my $carrier = `cat "/sys/class/net/$dev/carrier"`;
-  chomp $carrier;
-  if($carrier eq "1"){
-    run "dhclient $dev";
-  }else{
-    print STDERR "\nerror: cable is disconnected\n";
-    exit 1;
-  }
-}
+&main(@ARGV);
