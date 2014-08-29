@@ -30,7 +30,9 @@ run "pkill", "-f", "^dhclient $dev\$";
 if($arg eq 'on'){
   print "\nconnecting wired\n";
   run "ifconfig", $dev, "up";
-  if(`cat "/sys/class/net/$dev/carrier"` == '1'){
+  my $carrier = `cat "/sys/class/net/$dev/carrier"`;
+  chomp $carrier;
+  if($carrier eq "1"){
     run "dhclient $dev";
   }else{
     print STDERR "\nerror: cable is disconnected\n";
