@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 sub run(@);
+sub checkCarrier($);
+sub up($);
+sub down($);
 
 sub main(@){
   if(`whoami` ne "root\n"){
@@ -21,27 +24,47 @@ sub main(@){
     die "no suitable device {i.e. named eth#} found\n";
   }
 
-  print "\ndisconnecting wired\n";
-  run "ifconfig", $dev, "down";
-  run "pkill", "-f", "^dhclient $dev\$";
-
-  if($arg eq 'on'){
-    print "\nconnecting wired\n";
-    run "ifconfig", $dev, "up";
-    my $carrier = `cat "/sys/class/net/$dev/carrier"`;
-    chomp $carrier;
-    if($carrier eq "1"){
-      run "dhclient $dev";
-    }else{
-      print STDERR "\nerror: cable is disconnected\n";
-      exit 1;
+  if($arg eq 'off'){
+    down($dev);
+  }elsif($arg eq 'on'){
+    up($dev);
+    if(not checkCarrier($dev)){
+      down($dev);
+      up($dev);
+      sleep 3;
     }
+    die "\nerror: cable is disconnected\n" if not checkCarrier $dev;
+    run "dhclient $dev";
   }
 }
 
 sub run(@){
   print "@_\n";
   system @_;
+}
+
+sub checkCarrier($){
+  my $dev = shift;
+  my $carrier = `cat "/sys/class/net/$dev/carrier" 2>/dev/null`;
+  chomp $carrier;
+  if($carrier eq "1"){
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
+sub up($){
+  my $dev = shift;
+  print "\nconnecting wired $dev\n";
+  run "ifconfig", $dev, "up";
+}
+
+sub down($){
+  my $dev = shift;
+  print "\ndisconnecting wired $dev\n";
+  run "pkill", "-f", "^dhclient $dev\$";
+  run "ifconfig", $dev, "down";
 }
 
 &main(@ARGV);
