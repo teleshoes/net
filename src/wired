@@ -13,7 +13,7 @@ sub main(@){
   my $arg = shift;
   $arg = 'on' if not defined $arg;
 
-  die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off|toggle)$/;
+  die "$0 [on|off] {default: on}" if @ARGV > 0 or $arg !~ /^(on|off)$/;
 
   my $dev = `ifdev eth`;
   chomp $dev;
