@@ -7,6 +7,8 @@ sub checkCarrier($);
 sub up($);
 sub down($);
 
+my $carrierAttempts = 10;
+
 sub main(@){
   if(`whoami` ne "root\n"){
     print STDERR "rerunning as root...\n";
@@ -31,7 +33,14 @@ sub main(@){
     if(not checkCarrier($dev)){
       down($dev);
       up($dev);
-      sleep 3;
+      print "waiting for carrier, giving up after $carrierAttempts tries\n";
+      select(STDOUT);
+      $| = 1;
+      while($carrierAttempts > 0 and not checkCarrier($dev)){
+        print ".";
+        sleep 1;
+        $carrierAttempts--;
+      }
     }
     die "\nerror: cable is disconnected\n" if not checkCarrier $dev;
     run "dhclient $dev";
