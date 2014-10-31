@@ -3,11 +3,15 @@ use strict;
 use warnings;
 
 sub attemptPing($$$$);
+sub logWatchdog($);
 
 my $defaultDeadline = 1;
 my $defaultDelay = 1;
 my $defaultTimeout = 0;
 my $defaultAttempts = 0;
+my $defaultWatchdogAttempts = 5;
+
+my $watchdogLog = "/tmp/ping_watchdog.log";
 
 my $defaultUrl = "fsf.org";
 
@@ -18,21 +22,33 @@ my $usage = "Usage:
   $0 [OPTS] EXEC [ARG ARG ..]
     Ensure that $defaultUrl is ping-able before running \"EXEC ARG ARG ..\"
 
-
   OPTS:
     --url=URL
       use URL instead of $defaultUrl
 
-    --deadline=INTEGER     {default is $defaultDeadline}
+    --watchdog
+      Instead of normal behaviour, ping URL forever.
+      If URL fails to ping after WATCHDOG_ATTEMPTS attempts,
+        run the given command, wait for it to finish,
+        and resume pinging forever.
+      Will not rerun the failure command until a successful ping.
+      Logs failures to $watchdogLog.
+      Must specify a command.
+      Ignores --attempts and --deadline arguments.
+
+    --watchdog-attempts=INTEGER {default is $defaultWatchdogAttempts}
+      sets the number of attempts before running the given command
+
+    --deadline=INTEGER          {default is $defaultDeadline}
       seconds to wait for a response for each ping
 
-    --delay=INTEGER        {default is $defaultDelay}
+    --delay=INTEGER             {default is $defaultDelay}
       seconds to wait between failed pings
 
-    --timeout=INTEGER      {default is $defaultTimeout}
+    --timeout=INTEGER           {default is $defaultTimeout}
       seconds to wait before failing, 0 means forever
 
-    --attempts=INTEGER     {default is $defaultAttempts}
+    --attempts=INTEGER          {default is $defaultAttempts}
       number of times to attempt a ping, 0 means forever
 
     --ipmagic=IPMAGIC_CONF
@@ -45,10 +61,12 @@ my $usage = "Usage:
 ";
 
 sub main(@){
-  my ($url, $deadline, $delay, $timeout, $attempts) = ($defaultUrl,
-    $defaultDeadline, $defaultDelay, $defaultTimeout, $defaultAttempts);
-  my $quiet = 0;
+  my ($url, $deadline, $delay, $timeout, $attempts, $watchdogAttempts) =
+    ($defaultUrl, $defaultDeadline, $defaultDelay, $defaultTimeout,
+     $defaultAttempts, $defaultWatchdogAttempts);
+  my $watchdog = 0;
   my $ipmagicConf = undef;
+  my $quiet = 0;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
     if($opt =~ /^--url=(.*)$/){
@@ -61,10 +79,14 @@ sub main(@){
       $timeout = $1;
     }elsif($opt =~ /^--attempts=(\d+)$/){
       $attempts = $1;
-    }elsif($opt =~ /^(-q|--quiet)$/){
-      $quiet = 1;
     }elsif($opt =~ /^--ipmagic=(.*)$/){
       $ipmagicConf = $1;
+    }elsif($opt =~ /^--watchdog-attempts=(\d+)$/){
+      $watchdogAttempts = $1;
+    }elsif($opt =~ /^--watchdog$/){
+      $watchdog = 1;
+    }elsif($opt =~ /^(-q|--quiet)$/){
+      $quiet = 1;
     }else{
       die $usage;
     }
@@ -74,6 +96,40 @@ sub main(@){
   my @args = @_;
 
   my $testOnly = not defined $exec;
+
+  if($watchdog){
+    die $usage if $testOnly;
+    my $failed = 0;
+    while(1){
+      my $rem = $watchdogAttempts;
+      while(not attemptPing $url, $ipmagicConf, $deadline, $quiet){
+        if($rem == 0){
+          last;
+        }
+        $rem--;
+        print STDERR `date` if not $quiet;
+        print STDERR "ping failed, retrying...\n" if not $quiet;
+        sleep $delay;
+      }
+      my $prevFailed = $failed;
+      $failed = $rem == 0;
+
+      if(not $prevFailed and $failed){
+        print STDERR `date` if not $quiet;
+        print STDERR "ping failure, running $exec @args\n" if not $quiet;
+        logWatchdog "ping failure, running $exec @args";
+        system $exec, @args;
+      }elsif($prevFailed and $failed){
+        print STDERR `date` if not $quiet;
+        print STDERR "repeated ping failure, NOT running command\n" if not $quiet;
+        logWatchdog "repeated ping failure, NOT running command";
+      }elsif($prevFailed and not $failed){
+        print STDERR `date` if not $quiet;
+        print STDERR "ping recovered...\n" if not $quiet;
+        logWatchdog "ping recovered";
+      }
+    }
+  }
 
   my $start = time;
   my $count = 0;
@@ -99,6 +155,15 @@ sub main(@){
   }else{
     exec $exec, @args;
   }
+}
+
+sub logWatchdog($){
+  my $msg = shift;
+  my $d = `date`;
+  chomp $d;
+  open FH, ">> $watchdogLog";
+  print FH "$d $msg\n";
+  close FH;
 }
 
 sub attemptPing($$$$){
