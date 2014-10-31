@@ -3,17 +3,19 @@ use strict;
 use warnings;
 use Getopt::Long qw(GetOptionsFromArray);
 
-my $usage = "Usage: $0 [-w|--wired] [-p|--ping]\n";
+my $usage = "Usage: $0 [-h|--help] [-w|--wired] [-p|--ping]\n";
 
 sub main(@){
   my $wired;
   my $pingTest;
+  my $help;
   GetOptionsFromArray(\@_,
     "wired|w" => \$wired,
     "ping|p" => \$pingTest,
+    "help|h" => \$help,
   );
 
-  die $usage if @_ > 0;
+  die $usage if @_ > 0 or defined $help;
   if(defined $pingTest){
     my $test = `execPing --attempts=1`;
     if($test =~ /^ok:/){
