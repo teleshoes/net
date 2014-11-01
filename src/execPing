@@ -34,7 +34,7 @@ my $usage = "Usage:
       Will not rerun the failure command until a successful ping.
       Logs failures to $watchdogLog.
       Must specify a command.
-      Ignores --attempts and --deadline arguments.
+      Ignores --attempts and --timeout arguments.
 
     --watchdog-attempts=INTEGER {default is $defaultWatchdogAttempts}
       sets the number of attempts before running the given command
