@@ -31,7 +31,7 @@ my $usage = "Usage:
       If URL fails to ping after WATCHDOG_ATTEMPTS attempts,
         run the given command, wait for it to finish,
         and resume pinging forever.
-      Will not rerun the failure command until a successful ping.
+      Will not run (or rerun) the failure command until a successful ping.
       Logs failures to $watchdogLog.
       Must specify a command.
       Ignores --attempts and --timeout arguments.
@@ -99,7 +99,7 @@ sub main(@){
 
   if($watchdog){
     die $usage if $testOnly;
-    my $failed = 0;
+    my $failed = 1;
     while(1){
       my $rem = $watchdogAttempts;
       while(not attemptPing $url, $ipmagicConf, $deadline, $quiet){
