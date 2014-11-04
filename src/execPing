@@ -128,8 +128,9 @@ sub main(@){
         logWatchdog "repeated ping failure, NOT running command";
       }elsif($prevFailed and not $failed){
         print STDERR `date` if not $quiet;
-        print STDERR "ping recovered...\n" if not $quiet;
-        logWatchdog "ping recovered";
+        my $msg = "successful ping, will run $exec @args on next failure\n";
+        print STDERR $msg if not $quiet;
+        logWatchdog $msg;
       }
     }
   }
