@@ -121,7 +121,7 @@ sub main(@){
         my @cmd = ($exec, @args);
         s/'/'\\''/g foreach @cmd;
         @cmd = map {"'$_'"} @cmd;
-        system "@cmd | tee -a $watchdogLog";
+        system "@cmd 2>&1 | tee -a $watchdogLog";
       }elsif($prevFailed and $failed){
         print STDERR `date` if not $quiet;
         print STDERR "repeated ping failure, NOT running command\n" if not $quiet;
