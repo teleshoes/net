@@ -118,7 +118,10 @@ sub main(@){
         print STDERR `date` if not $quiet;
         print STDERR "ping failure, running $exec @args\n" if not $quiet;
         logWatchdog "ping failure, running $exec @args";
-        system $exec, @args;
+        my @cmd = ($exec, @args);
+        s/'/'\\''/g foreach @cmd;
+        @cmd = map {"'$_'"} @cmd;
+        system "@cmd | tee -a $watchdogLog";
       }elsif($prevFailed and $failed){
         print STDERR `date` if not $quiet;
         print STDERR "repeated ping failure, NOT running command\n" if not $quiet;
