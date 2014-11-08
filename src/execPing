@@ -15,6 +15,8 @@ my $watchdogLog = "/tmp/ping_watchdog.log";
 
 my $defaultUrl = "fsf.org";
 
+my $quiet = 0;
+
 my $usage = "Usage:
   $0 [OPTS]
     Tests if $defaultUrl is ping-able. Prints \"ok: URL\" or \"failed: URL\"
@@ -66,7 +68,6 @@ sub main(@){
      $defaultAttempts, $defaultWatchdogAttempts);
   my $watchdog = 0;
   my $ipmagicConf = undef;
-  my $quiet = 0;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
     if($opt =~ /^--url=(.*)$/){
@@ -115,22 +116,15 @@ sub main(@){
       $failed = $rem == 0;
 
       if(not $prevFailed and $failed){
-        print STDERR `date` if not $quiet;
-        print STDERR "ping failure, running $exec @args\n" if not $quiet;
-        logWatchdog "ping failure, running $exec @args";
+        logWatchdog "ping failure: running $exec @args";
         my @cmd = ($exec, @args);
         s/'/'\\''/g foreach @cmd;
         @cmd = map {"'$_'"} @cmd;
         system "@cmd 2>&1 | tee -a $watchdogLog";
       }elsif($prevFailed and $failed){
-        print STDERR `date` if not $quiet;
-        print STDERR "repeated ping failure, NOT running command\n" if not $quiet;
-        logWatchdog "repeated ping failure, NOT running command";
+        logWatchdog "ping failure: ignoring until successful ping\n";
       }elsif($prevFailed and not $failed){
-        print STDERR `date` if not $quiet;
-        my $msg = "successful ping, will run $exec @args on next failure\n";
-        print STDERR $msg if not $quiet;
-        logWatchdog $msg;
+        logWatchdog "successful ping: will run $exec @args on next failure\n";
       }
     }
   }
@@ -168,6 +162,7 @@ sub logWatchdog($){
   open FH, ">> $watchdogLog";
   print FH "$d $msg\n";
   close FH;
+  print STDERR "$d $msg\n" if not $quiet;
 }
 
 sub attemptPing($$$$){
