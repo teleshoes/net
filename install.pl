@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-my $prefix = "/usr/local/bin";
+my $prefix = "/usr/local";
 my $bcDir = "/etc/bash_completion.d";
 
 sub runOrDie(@){
@@ -26,7 +26,7 @@ sub main(@){
   for my $f(`ls src`){
     chomp $f;
     next if $f eq "bash_completion";
-    runOrDie "cp", "src/$f", "$prefix";
+    runOrDie "cp", "src/$f", "$prefix/bin";
   }
 
   runOrDie "cp", "src/bash_completion", "$bcDir/net-ssids";
