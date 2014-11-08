@@ -12,7 +12,8 @@ sub runOrDie(@){
 }
 
 sub main(@){
-  die "Usage: $0\n" if @_ > 0;
+  $prefix = shift if @_ == 1;
+  die "Usage: $0 [PREFIX]  {default is $prefix}\n" if @_ > 0 or not -d $prefix;
 
   if(`whoami` ne "root\n"){
     print "rerunning as root\n";
