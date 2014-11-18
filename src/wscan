@@ -21,13 +21,14 @@ my $usage = "Usage:
     perform a scan only if last scan is <DELAY_INT> seconds old
 
   --retry retries every second forever until a scan is successful
-  --pretty {DEFAULT} prints SSID, QUAL, ENC, MODE, and NOTE in a table
-  --info prints \"SSID,QUAL,ENC,MODE,NOTE\"
+  --pretty {DEFAULT} prints SSID, QUAL, CHAN, ENC, MODE, and NOTE in a table
+  --info prints \"SSID,QUAL,CHAN,ENC,MODE,NOTE\"
   --ssids prints \"SSID\"
   --fuzzy prints \"FUZZY\"
     SSID is the exact ssid
     FUZZY is the ssid in lowercase with ' ' replaced with '_'
-    QUAL is an integer followed by %
+    QUAL is the signal quality in percent: an integer followed by '%'
+    CHAN is the channel for the WLAN frequency: an integer preceded by 'ch'
     ENC is [$encs]
     MODE is [$modes]
     NOTE is '[new]' if ssid is unknown
@@ -180,12 +181,13 @@ sub formatCell($$){
     return ''
       . trimPad($$c{SSID},       20) . " | "
       . trimPad($$c{QUALITY},     4) . " | "
+      . trimPad($$c{CHANNEL},     5) . " | "
       . trimPad($$c{ENCRYPTION},  4) . " | "
       . trimPad($$c{MODE},        9) . " | "
       . trimPad($$c{NOTE},        9) . " | "
     ;
   }elsif($format eq '--info'){
-    return "$$c{SSID},$$c{QUALITY},$$c{ENCRYPTION},$$c{MODE},$$c{NOTE}";
+    return "$$c{SSID},$$c{QUALITY},$$c{CHANNEL},$$c{ENCRYPTION},$$c{MODE},$$c{NOTE}";
   }elsif($format eq '--ssids'){
     return $$c{SSID};
   }elsif($format eq '--fuzzy'){
@@ -210,6 +212,8 @@ sub parseCell($){
   my $essid = $1;
   $cell =~ /\s*Quality=(\d+)\/(\d+)/;
   my $quality = $2 == 0 ? '?' : int($1*100/$2)."%";
+  my $channel = "ch$1" if $cell =~ /Channel:(\d+)/;
+  $channel = "ch?" if not defined $channel;
   $cell =~ /\s*Encryption key:(.*)/;
   my $enc;
   if($1 eq 'on'){
@@ -229,6 +233,7 @@ sub parseCell($){
   return {
     SSID => $essid,
     QUALITY => $quality,
+    CHANNEL => $channel,
     ENCRYPTION => $enc,
     MODE => $mode,
   };
