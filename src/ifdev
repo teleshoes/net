@@ -30,7 +30,7 @@ sub main(@){
   my @ifconfig = `ifconfig -a`;
 
   for my $line(@ifconfig){
-    if($line =~ /^($dev\d+) /){
+    if($line =~ /^($dev\d+):? /){
       print "$1\n";
       exit 0;
     }
