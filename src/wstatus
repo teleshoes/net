@@ -41,7 +41,7 @@ sub getDev(){
           next;
         }
       }
-      if(`ifconfig $device` =~ /inet addr/){
+      if(`ifconfig $device` =~ /inet( addr)? \d+/){
         return $dev;
       }
     }
