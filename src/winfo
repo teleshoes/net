@@ -128,8 +128,8 @@ sub main(@){
     }
   }elsif(defined $scanned and defined $targetSSID){
     for my $cell(`$wscanExec -l --info`){
-      if($cell =~ /^(.*),(\d+\%),($validEncs),($validModes),(.*)$/i){
-        my ($ssid, $qual, $enc, $mode, $note) = ($1, $2, $3, $4, $5);
+      if($cell =~ /^(.*),(\d+\%),(ch\d+),($validEncs),($validModes),(.*)$/i){
+        my ($ssid, $qual, $chan, $enc, $mode, $note) = ($1, $2, $3, $4, $5, $6);
         my $found = 0;
         $found = 1 if $exact and $ssid eq $targetSSID;
         $found = 1 if not $exact and fuzzy($ssid) eq fuzzy($targetSSID);
