@@ -32,6 +32,10 @@ my $usage = "Usage:
     CONFIG_NAME must be [a-z]+ {lowercase letters only}.
     'default' is assumed if CONFIG_NAME is omitted.
 
+  $0 -s FILE_NAME
+    Copies FILE_NAME to $targetFile
+      and makes it read-only with chattr +i
+
   $0 -d
     Removes $targetFile
 ";
@@ -43,12 +47,20 @@ sub main(@){
     exit 0;
   }
 
-  my $conf = shift;
-  $conf = 'default' if not defined $conf;
-  if($conf eq '-d'){
+  if(@_ == 1 and $_[0] eq "-d"){
     removeResolv();
     exit 0;
+  }elsif(@_ == 2 and $_[0] eq "-s"){
+    my $file = $_[1];
+    die "file not found: $file\n" if not -f $file;
+    print "reolv: applying $file:\n====\n";
+    system "cat", $file;
+    replaceResolv $file;
+    exit 0;
   }
+
+  my $conf = shift;
+  $conf = 'default' if not defined $conf;
 
   if (@_ > 0 or $conf !~ /^($okConfigs)$/){
     die $usage;
@@ -64,7 +76,7 @@ sub main(@){
   }
   print "\n";
 
-  replaceResolv $file; 
+  replaceResolv $file;
 }
 
 sub getAvailableConfigs(){
