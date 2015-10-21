@@ -65,7 +65,7 @@ sub main(@){
 
 sub getAvailableConfigs(){
   my @configs;
-  for my $file(`ls -1 $configDir/`){
+  for my $file(`ls -1 $configDir/ 2>/dev/null`){
     push @configs, $1 if $file =~ /resolv\.conf\.([a-z]+)/;
   }
   return @configs;
