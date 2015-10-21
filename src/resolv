@@ -15,32 +15,14 @@
 use strict;
 use warnings;
 
+sub getAvailableConfigs();
+sub removeResolv();
+sub replaceResolv($);
+
 my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
 
 my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
-
-sub getAvailableConfigs(){
-  my @configs;
-  for my $file(`ls -1 $configDir/`){
-    push @configs, $1 if $file =~ /resolv\.conf\.([a-z]+)/;
-  }
-  return @configs;
-}
-
-sub removeResolv(){
-  if(-e $targetFile){
-    system "chattr", "-i", $targetFile;
-    system "rm", "-f", $targetFile;
-  }
-}
-
-sub replaceResolv($){
-  my $file = shift;
-  removeResolv();
-  system "cp", $file, $targetFile;
-  system "chattr", "+i", $targetFile;
-}
 
 sub main(@){
   if(not -d $configDir){
@@ -79,6 +61,28 @@ sub main(@){
   print "\n";
 
   replaceResolv $file; 
+}
+
+sub getAvailableConfigs(){
+  my @configs;
+  for my $file(`ls -1 $configDir/`){
+    push @configs, $1 if $file =~ /resolv\.conf\.([a-z]+)/;
+  }
+  return @configs;
+}
+
+sub removeResolv(){
+  if(-e $targetFile){
+    system "chattr", "-i", $targetFile;
+    system "rm", "-f", $targetFile;
+  }
+}
+
+sub replaceResolv($){
+  my $file = shift;
+  removeResolv();
+  system "cp", $file, $targetFile;
+  system "chattr", "+i", $targetFile;
 }
 
 &main(@ARGV);
