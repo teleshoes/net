@@ -23,6 +23,7 @@ my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
 
 my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
+my $okConfigs = join "|", getAvailableConfigs();
 
 sub main(@){
   if(not -d $configDir){
@@ -37,10 +38,9 @@ sub main(@){
     exit 0;
   }
 
-  my $configs = join "|", getAvailableConfigs();
-  if (@_ > 0 or $conf !~ /^($configs)$/){
+  if (@_ > 0 or $conf !~ /^($okConfigs)$/){
     die "Usage:
-      $0 [CONFIG_NAME]   {available: $configs}
+      $0 [CONFIG_NAME]   {available: $okConfigs}
         Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
           and makes it read-only with chattr +i.
         CONFIG_NAME must be [a-z]+ {lowercase letters only}.
