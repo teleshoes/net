@@ -25,6 +25,18 @@ my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
 my $okConfigs = join "|", getAvailableConfigs();
 
+my $usage = "Usage:
+  $0 [CONFIG_NAME]   {available: $okConfigs}
+    Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
+      and makes it read-only with chattr +i.
+    CONFIG_NAME must be [a-z]+ {lowercase letters only}.
+    'default' is assumed if CONFIG_NAME is omitted.
+
+  $0 -d
+    Removes $targetFile
+";
+
+
 sub main(@){
   if(not -d $configDir){
     print STDERR "$configDir does not exist, skipping resolv\n";
@@ -39,15 +51,7 @@ sub main(@){
   }
 
   if (@_ > 0 or $conf !~ /^($okConfigs)$/){
-    die "Usage:
-      $0 [CONFIG_NAME]   {available: $okConfigs}
-        Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
-          and makes it read-only with chattr +i.
-        CONFIG_NAME must be [a-z]+ {lowercase letters only}.
-        'default' is assumed if CONFIG_NAME is omitted.
-
-      $0 -d
-        Removes $targetFile\n";
+    die $usage;
   }
   my $file = "$configDir/resolv.conf.$conf";
   print "resolv: applying $conf";
