@@ -45,6 +45,7 @@ sub formatScan($$$);
 sub formatCell($$);
 sub cellSort($$);
 sub parseCell($);
+sub dBmToQuality($);
 sub trimPad($$);
 
 sub main(@){
@@ -86,22 +87,22 @@ sub scanNow($$){
   my ($retry, $dev) = @_;
 
   system "sudo ifconfig $dev up";
-  my $iwlist;
+  my $iwScan;
   do{
-    $iwlist = `sudo iwlist $dev scan`;
+    $iwScan = `sudo iw dev $dev scan`;
     $retry = 0 if $? == 0;
     sleep 1 if $retry;
   }while($retry);
 
   exit 1 if $? != 0;
-  if($iwlist =~ s/^$dev\s*Scan completed :\n//){
+  if($iwScan =~ /BSS.*\(on $dev\)/){
     attemptClearLastScanFiles($dev);
     my $lastScanFile = newLastScanFile($dev);
     open FH, "> $lastScanFile";
-    print FH $iwlist;
+    print FH $iwScan;
     close FH;
   }
-  return $iwlist;
+  return $iwScan;
 }
 sub scanLast($){
   my ($dev) = @_;
@@ -156,8 +157,23 @@ sub newLastScanFile($){
 sub formatScan($$$){
   my ($iwScan, $format, $dev) = @_;
 
-  my @cells = split /          Cell \d+ - /, $iwScan;
-  shift @cells;
+  my @lines = map {"$_\n"} split /\n/, $iwScan;
+  my @cells;
+  my $cell = undef;
+  for my $line(@lines){
+    if($line =~ /^BSS.*\(on $dev\)/){
+      push @cells, $cell if defined $cell;
+      $cell = $line;
+    }elsif($line =~ /^\t/){
+      if(not defined $cell){
+        die "malformed iw scan, missing header line\n";
+      }
+      $cell .= $line;
+    }else{
+      die "malformed iw scan, could not parse line:\n$line";
+    }
+  }
+  push @cells, $cell if defined $cell;
 
   my @parsedCells = map {parseCell $_} @cells;
   my %auto = map {chomp; s/^(\d+)://; $_ => $1}
@@ -214,35 +230,52 @@ sub cellSort($$){
 
 sub parseCell($){
   my $cell = shift;
-  $cell =~ /\s*ESSID:"(.*)"/;
-  my $essid = $1;
-  $cell =~ /\s*Quality=(\d+)\/(\d+)/;
-  my $quality = $2 == 0 ? '?' : int($1*100/$2)."%";
-  my $channel = "ch$1" if $cell =~ /Channel:(\d+)/;
-  $channel = "ch?" if not defined $channel;
-  $cell =~ /\s*Encryption key:(.*)/;
+
+  my $ssid = $1 if $cell =~ /^\t*SSID: (.*)/m;
+
+  my $dBm = $1 if $cell =~ /^\t*signal: (-?\d+(?:\.\d+)?) dBm$/m;
+  my $quality = dBmToQuality $dBm;
+
+  my $channel = $1 if $cell =~ /^\t* \* primary channel: (\d+)$/m;
+  $channel = defined $channel ? "ch$channel" : "ch?";
+
   my $enc;
-  if($1 eq 'on'){
-    if($cell =~ /WPA2/){
-      $enc = 'WPA2';
-    }elsif($cell =~ /WPA/){
-      $enc = 'WPA';
-    }else{
-      $enc = 'WEP';
-    }
+  if($cell =~ /^\t*RSN:/m){
+    $enc = 'WPA2';
+  }elsif($cell =~ /^\t*WPA:/m){
+    $enc = 'WPA';
+  }elsif($cell =~ /^\t*capability:.*Privacy/m){
+    $enc = 'WEP';
   }else{
     $enc = 'NONE';
   }
-  $cell =~ /\s*Mode:(.*)/;
-  my $mode = lc $1;
-  $mode = 'auto' if $mode !~ /^($modes)$/;
+
+  my $mode;
+  if($cell =~ /^\t*capability:.*ESS/m){
+    $mode = "master";
+  }elsif($cell =~ /^\t*capability:.*IBSS/m){
+    $mode = "ad-hoc";
+  }else{
+    $mode = "auto";
+  }
+
   return {
-    SSID => $essid,
+    SSID => $ssid,
     QUALITY => $quality,
     CHANNEL => $channel,
     ENCRYPTION => $enc,
     MODE => $mode,
   };
+}
+
+sub dBmToQuality($){
+  my $dBm = shift;
+  #this is what iwlist does
+  my $quality = (110.0 + $dBm) / 70.0;
+  $quality = int(100.0 * $quality);
+  $quality = 0 if $quality < 0;
+  $quality = 100 if $quality > 100;
+  return "$quality%";
 }
 
 sub trimPad($$){
