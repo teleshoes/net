@@ -4,8 +4,6 @@ use warnings;
 use Time::HiRes qw(time);
 
 my $lastScanFilePrefix = "/tmp/wscan-last-";
-my $dev = `ifdev wlan`;
-chomp $dev;
 my $winfoExec = 'winfo';
 
 my $encs = join '|', qw(wpa wpa2 wep none);
@@ -36,9 +34,9 @@ my $usage = "Usage:
             '' otherwise
 ";
 
-sub scanNow($);
-sub scanLast();
-sub scanRecent($$);
+sub scanNow($$);
+sub scanLast($);
+sub scanRecent($$$);
 
 sub getLastScanFile();
 sub attemptClearLastScanFiles();
@@ -50,6 +48,8 @@ sub parseCell($);
 sub trimPad($$);
 
 sub main(@){
+  my $dev = `ifdev wlan`;
+  chomp $dev;
   my $iwScan;
   my $format = '--pretty';
   if(@_ > 0 and $_[-1] =~ /^($formats)$/){
@@ -68,11 +68,11 @@ sub main(@){
 
   die $usage if @_ > 0;
   if($sched eq '--now'){
-    $iwScan = scanNow $retry;
+    $iwScan = scanNow $retry, $dev;
   }elsif($sched =~ /^(-l|--last)$/ and $retry == 0){
-    $iwScan = scanLast;
+    $iwScan = scanLast $dev;
   }elsif($sched =~ /^\d+$/){
-    $iwScan = scanRecent $sched, $retry;
+    $iwScan = scanRecent $sched, $retry, $dev;
   }else{
     die $usage;
   }
@@ -80,8 +80,9 @@ sub main(@){
   print formatScan $iwScan, $format;
 }
 
-sub scanNow($){
-  my $retry = shift;
+sub scanNow($$){
+  my ($retry, $dev) = @_;
+
   system "sudo ifconfig $dev up";
   my $iwlist;
   do{
@@ -100,7 +101,8 @@ sub scanNow($){
   }
   return $iwlist;
 }
-sub scanLast(){
+sub scanLast($){
+  my ($dev) = @_;
   my $lastScanFile = getLastScanFile();
   if(defined $lastScanFile and -e $lastScanFile){
     return `cat $lastScanFile`;
@@ -108,9 +110,9 @@ sub scanLast(){
     die "No scan file exists\n";
   }
 }
-sub scanRecent($$){
-  my $delay = shift;
-  my $retry = shift;
+sub scanRecent($$$){
+  my ($delay, $retry, $dev) = @_;
+
   my $scanDate = 0;
   my $lastScanFile = getLastScanFile();
   if(defined $lastScanFile and -e $lastScanFile){
@@ -119,17 +121,17 @@ sub scanRecent($$){
     $scanDate = 0 if not $scanDate =~ /^\d+$/;
   }else{
     print STDERR "no previous scan exists, scanning...\n";
-    return scanNow $retry;
+    return scanNow $retry, $dev;
   }
   my $now = `date +%s`;
   my $elapsed = $now - $scanDate;
   print STDERR "last scan is ${elapsed}s old; ";
   if($elapsed > $delay){
     print STDERR "exceeds the limit of ${delay}s, rescanning...\n";
-    return scanNow $retry;
+    return scanNow $retry, $dev;
   }else{
     print STDERR "within limit of ${delay}s, skipping scan\n";
-    return scanLast;
+    return scanLast $dev;
   }
   exit 0;
 }
