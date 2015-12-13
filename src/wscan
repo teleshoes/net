@@ -50,6 +50,8 @@ sub trimPad($$);
 sub main(@){
   my $dev = `ifdev wlan`;
   chomp $dev;
+  die "could not find wlan dev\n" if $dev !~ /^wlan/;
+
   my $iwScan;
   my $format = '--pretty';
   if(@_ > 0 and $_[-1] =~ /^($formats)$/){
