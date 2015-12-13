@@ -50,7 +50,7 @@ sub parseCell($);
 sub trimPad($$);
 
 sub main(@){
-  my $iwlist;
+  my $iwScan;
   my $format = '--pretty';
   if(@_ > 0 and $_[-1] =~ /^($formats)$/){
     $format = pop;
@@ -68,16 +68,16 @@ sub main(@){
 
   die $usage if @_ > 0;
   if($sched eq '--now'){
-    $iwlist = scanNow $retry;
+    $iwScan = scanNow $retry;
   }elsif($sched =~ /^(-l|--last)$/ and $retry == 0){
-    $iwlist = scanLast;
+    $iwScan = scanLast;
   }elsif($sched =~ /^\d+$/){
-    $iwlist = scanRecent $sched, $retry;
+    $iwScan = scanRecent $sched, $retry;
   }else{
     die $usage;
   }
 
-  print formatScan $iwlist, $format;
+  print formatScan $iwScan, $format;
 }
 
 sub scanNow($){
@@ -147,10 +147,10 @@ sub newLastScanFile(){
 }
 
 sub formatScan($$){
-  my $iwlist = shift;
+  my $iwScan = shift;
   my $format = shift;
 
-  my @cells = split /          Cell \d+ - /, $iwlist;
+  my @cells = split /          Cell \d+ - /, $iwScan;
   shift @cells;
 
   my @parsedCells = map {parseCell $_} @cells;
