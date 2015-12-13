@@ -140,17 +140,17 @@ sub scanRecent($$$){
 
 sub getLastScanFile($){
   my ($dev) = @_;
-  my @files = `ls $lastScanFilePrefix*`;
+  my @files = `ls $lastScanFilePrefix$dev-*`;
   map {chomp} @files;
   return @files == 0 ? undef : $files[-1];
 }
 sub attemptClearLastScanFiles($){
   my ($dev) = @_;
-  system "rm -f $lastScanFilePrefix* 2>/dev/null";
+  system "rm -f $lastScanFilePrefix$dev-* 2>/dev/null";
 }
 sub newLastScanFile($){
   my ($dev) = @_;
-  return $lastScanFilePrefix . int(time * 1000);
+  return "$lastScanFilePrefix$dev-" . int(time * 1000);
 }
 
 sub formatScan($$){
