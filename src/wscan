@@ -62,7 +62,7 @@ sub main(@){
     pop;
   }
 
-  
+
   my $sched = shift;
   $sched = '--now' if not defined $sched;
 
@@ -89,7 +89,7 @@ sub scanNow($){
     $retry = 0 if $? == 0;
     sleep 1 if $retry;
   }while($retry);
-  
+
   exit 1 if $? != 0;
   if($iwlist =~ s/^$dev\s*Scan completed :\n//){
     attemptClearLastScanFiles();
