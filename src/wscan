@@ -41,7 +41,7 @@ sub scanRecent($$$);
 sub getLastScanFile($);
 sub attemptClearLastScanFiles($);
 sub newLastScanFile($);
-sub formatScan($$);
+sub formatScan($$$);
 sub formatCell($$);
 sub cellSort($$);
 sub parseCell($);
@@ -79,7 +79,7 @@ sub main(@){
     die $usage;
   }
 
-  print formatScan $iwScan, $format;
+  print formatScan $iwScan, $format, $dev;
 }
 
 sub scanNow($$){
@@ -153,9 +153,8 @@ sub newLastScanFile($){
   return "$lastScanFilePrefix$dev-" . int(time * 1000);
 }
 
-sub formatScan($$){
-  my $iwScan = shift;
-  my $format = shift;
+sub formatScan($$$){
+  my ($iwScan, $format, $dev) = @_;
 
   my @cells = split /          Cell \d+ - /, $iwScan;
   shift @cells;
