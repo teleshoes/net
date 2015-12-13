@@ -38,9 +38,9 @@ sub scanNow($$);
 sub scanLast($);
 sub scanRecent($$$);
 
-sub getLastScanFile();
-sub attemptClearLastScanFiles();
-sub newLastScanFile();
+sub getLastScanFile($);
+sub attemptClearLastScanFiles($);
+sub newLastScanFile($);
 sub formatScan($$);
 sub formatCell($$);
 sub cellSort($$);
@@ -95,8 +95,8 @@ sub scanNow($$){
 
   exit 1 if $? != 0;
   if($iwlist =~ s/^$dev\s*Scan completed :\n//){
-    attemptClearLastScanFiles();
-    my $lastScanFile = newLastScanFile();
+    attemptClearLastScanFiles($dev);
+    my $lastScanFile = newLastScanFile($dev);
     open FH, "> $lastScanFile";
     print FH $iwlist;
     close FH;
@@ -105,7 +105,7 @@ sub scanNow($$){
 }
 sub scanLast($){
   my ($dev) = @_;
-  my $lastScanFile = getLastScanFile();
+  my $lastScanFile = getLastScanFile($dev);
   if(defined $lastScanFile and -e $lastScanFile){
     return `cat $lastScanFile`;
   }else{
@@ -116,7 +116,7 @@ sub scanRecent($$$){
   my ($delay, $retry, $dev) = @_;
 
   my $scanDate = 0;
-  my $lastScanFile = getLastScanFile();
+  my $lastScanFile = getLastScanFile($dev);
   if(defined $lastScanFile and -e $lastScanFile){
     $scanDate = `stat --format %Y $lastScanFile`;
     chomp $scanDate;
@@ -138,15 +138,18 @@ sub scanRecent($$$){
   exit 0;
 }
 
-sub getLastScanFile(){
+sub getLastScanFile($){
+  my ($dev) = @_;
   my @files = `ls $lastScanFilePrefix*`;
   map {chomp} @files;
   return @files == 0 ? undef : $files[-1];
 }
-sub attemptClearLastScanFiles(){
+sub attemptClearLastScanFiles($){
+  my ($dev) = @_;
   system "rm -f $lastScanFilePrefix* 2>/dev/null";
 }
-sub newLastScanFile(){
+sub newLastScanFile($){
+  my ($dev) = @_;
   return $lastScanFilePrefix . int(time * 1000);
 }
 
