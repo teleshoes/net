@@ -116,7 +116,8 @@ sub main(@){
   }
 
   my $count = 1;
-  my %autos = map{chomp; ($_ => $count++)} `cat $autoConf 2>/dev/null`;
+  my @autoLines = `cat $autoConf 2>/dev/null` if defined $autoConf;
+  my %autos = map{chomp; ($_ => $count++)} @autoLines;
 
   if(defined $listAll){
     my @ssids = sort $exact ? keys %entries : keys %fuzzyEntries;
@@ -192,6 +193,7 @@ sub selectFile(@){
   for my $file(@_){
     return $file if -e $file;
   }
+  return undef;
 }
 
 &main(@ARGV);
