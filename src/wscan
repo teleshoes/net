@@ -52,7 +52,7 @@ sub trimPad($$);
 sub main(@){
   my $dev = `ifdev wlan`;
   chomp $dev;
-  die "could not find wlan dev\n" if $dev !~ /^wlan/;
+  die "could not find wlan dev\n" if $dev !~ /\w+/;
 
   my $iwScan;
   my $format = '--pretty';
