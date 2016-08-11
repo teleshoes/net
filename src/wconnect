@@ -68,6 +68,10 @@ sub main(@){
         ($ssid, $encType, $mode) = ($1, $2, $3);
         if(lc $encType eq 'none'){
           print "found in last scan: $ssid enc=NONE mode=$mode\n";
+          if($mode =~ /^(master)$/){
+            print "changing mode $mode => managed\n";
+            $mode = "managed";
+          }
           exec $0, $ssid, "NONE", $mode;
         }
       }
