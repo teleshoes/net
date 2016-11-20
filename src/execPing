@@ -13,7 +13,7 @@ my $defaultWatchdogAttempts = 5;
 
 my $watchdogLog = "/tmp/ping_watchdog.log";
 
-my $defaultUrl = "fsf.org";
+my $defaultUrl = "eff.org";
 
 my $quiet = 0;
 
