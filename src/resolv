@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#Copyright 2010,2012,2015 Elliot Wolk
+#Copyright 2010,2012,2015,2017 Elliot Wolk
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
@@ -15,6 +15,7 @@
 use strict;
 use warnings;
 
+sub applyConfigName($);
 sub getAvailableConfigs();
 sub removeResolv();
 sub replaceResolv($);
@@ -32,7 +33,7 @@ my $usage = "Usage:
     CONFIG_NAME must be [a-z]+ {lowercase letters only}.
     'default' is assumed if CONFIG_NAME is omitted.
 
-  $0 -s FILE_NAME
+  $0 FILE_NAME
     Copies FILE_NAME to $targetFile
       and makes it read-only with chattr +i
 
@@ -40,33 +41,30 @@ my $usage = "Usage:
     Removes $targetFile
 ";
 
-
 sub main(@){
-  if(not -d $configDir){
-    print STDERR "$configDir does not exist, skipping resolv\n";
-    exit 0;
-  }
-
-  if(@_ == 1 and $_[0] eq "-d"){
+  if(@_ == 1 and $_[0] =~ /^-d$/){
     removeResolv();
     exit 0;
-  }elsif(@_ == 2 and $_[0] eq "-s"){
-    my $file = $_[1];
-    die "file not found: $file\n" if not -f $file;
+  }elsif(@_ == 1 and -f $_[0]){
+    my $file = $_[0];
     print "reolv: applying $file:\n====\n";
     system "cat", $file;
     replaceResolv $file;
-    exit 0;
-  }
-
-  my $conf = shift;
-  $conf = 'default' if not defined $conf;
-
-  if (@_ > 0 or $conf !~ /^($okConfigs)$/){
+  }elsif(not -d $configDir){
+    print STDERR "WARN: $configDir does not exist, skipping resolv\n";
+  }elsif(@_ == 0){
+    applyConfigName "default";
+  }elsif(@_ == 1 and $_[0] =~ /^($okConfigs)$/){
+    applyConfigName $_[0];
+  }else{
     die $usage;
   }
-  my $file = "$configDir/resolv.conf.$conf";
-  print "resolv: applying $conf";
+}
+
+sub applyConfigName($){
+  my ($confName) = @_;
+  my $file = "$configDir/resolv.conf.$confName";
+  print "resolv: applying $confName";
   if(-l $file){
     my $link = `ls -l $file`;
     if($link =~ /-> .*resolv\.conf\.([a-z]+)/){
@@ -95,7 +93,7 @@ sub removeResolv(){
 }
 
 sub replaceResolv($){
-  my $file = shift;
+  my ($file) = @_;
   removeResolv();
   system "cp", $file, $targetFile;
   system "chattr", "+i", $targetFile;
