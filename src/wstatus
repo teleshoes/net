@@ -2,40 +2,51 @@
 use strict;
 use warnings;
 
-my $devStatuses = {
-  wlan => [qw(wlan)],
-  eth  => [qw(eth)],
-  ppp  => [qw(ppp)],
-};
-my $wconnect = 'wconnect';
-my $wauto = 'wauto';
-my $tethering = 'tethering';
-my $none = 'none';
+my $STATUS_WLAN = "wlan";
+my $STATUS_ETH = "eth";
+my $STATUS_PPP = "ppp";
+my $STATUS_WCONNECT = "wconnect";
+my $STATUS_WAUTO = "wauto";
+my $STATUS_TETHERING = "tethering";
+my $STATUS_NONE = "none";
 
-my $okStatuses = join ',', ($wauto, $tethering, $none, sort keys %$devStatuses);
-my $usage = "Usage: $0  print one of [$okStatuses]\n";
+my $statusDevs = {
+  $STATUS_WLAN => [qw(wl wlan)],
+  $STATUS_ETH  => [qw(eth)],
+  $STATUS_PPP  => [qw(ppp)],
+};
+
+my @allStatuses = ($STATUS_WLAN, $STATUS_ETH, $STATUS_PPP,
+  $STATUS_WCONNECT, $STATUS_WAUTO, $STATUS_TETHERING, $STATUS_NONE);
+
+my $usage = "Usage:
+  $0
+    print one of:  [" . join(",", @allStatuses) . "]
+";
 
 sub getDev();
 sub isWconnect();
 sub isWauto();
 sub isTethering();
 
-
 sub main(@){
   die $usage if @_ > 0;
-  my $status = getDev();
-  $status = $wconnect if not defined $status and isWconnect();
-  $status = $wauto if not defined $status and isWauto();
-  $status = $tethering if not defined $status and isTethering();
-  $status = $none if not defined $status;
+  my $devStatus = getDev();
+
+  my $status = undef;
+  $status = $devStatus if not defined $status and defined $devStatus;
+  $status = $STATUS_WCONNECT if not defined $status and isWconnect();
+  $status = $STATUS_WAUTO if not defined $status and isWauto();
+  $status = $STATUS_TETHERING if not defined $status and isTethering();
+  $status = $STATUS_NONE if not defined $status;
   print "$status\n";
 }
 
 sub getDev(){
   my $netstat = `ifconfig -s`;
 
-  for my $status(sort keys %$devStatuses){
-    my @devs = @{$$devStatuses{$status}};
+  for my $status(sort keys %$statusDevs){
+    my @devs = @{$$statusDevs{$status}};
     my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
     if($? == 0 and $netstat =~ /^$device /m){
