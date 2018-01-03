@@ -2,57 +2,84 @@
 use strict;
 use warnings;
 
+sub readIfconfigDevs();
+sub readWinfoDevMappings();
+
 my $usage = "Usage:
-  $0 DEV_NAME
-     finds a net device to match DEV_NAME,
+  $0 DEV_NAME [DEV_NAME DEV_NAME ...]
+     finds a net device to match any DEV_NAME,
        using `winfo --att=dev` and `ifconfig -a`
 
-     if winfo has a dev mapping for <DEV_NAME>
-       then print the mapped device
+     if winfo has a dev mapping for any <DEV_NAME>
+       then print the first mapped device
      otherwise, if any ifconfig device name matches:
-       \"<DEV_NAME>#\"
+       \"<DEV_NAME>#\" for any <DEV_NAME>
        then print the first one that matches
 
      DEV_NAME can contain only letters, numbers, and underscores
 
      e.g.:
        if `winfo --att=dev` returns \"en:eth0,wl:wlan6\":
-         then `$0 wlan` => print \"wlan6\"
+         then `$0 wlan wl eth` => print \"wlan6\"
 
        if `winfo --att=dev` returns \"\",
        and `ifconfig -a` has a line like \"wlan0: flags...\" in it
-         then `$0 wlan` => print \"wlan0\"
+         then `$0 wl wlan` => print \"wlan0\"
 ";
 
 sub main(@){
-  my $dev = shift;
-  die $usage if not defined $dev;
+  my @devNames = @_;
+  die $usage if @devNames == 0;
+  for my $devName(@devNames){
+    die $usage if $devName !~ /^\w+$/;
+  }
 
+  my $winfoDevMappings = readWinfoDevMappings();
+  for my $devName(@devNames){
+    if(defined $$winfoDevMappings{$devName}){
+      print "$$winfoDevMappings{$devName}\n";
+      exit 0;
+    }
+  }
+
+  my @ifconfigDevs = readIfconfigDevs();
+  for my $devName(@devNames){
+    for my $ifconfigDev(@ifconfigDevs){
+      if($ifconfigDev =~ /^(${devName}\d+)$/){
+        print "$ifconfigDev\n";
+        exit 0;
+      }
+    }
+  }
+
+  my $devNameFmt = join " or ", map {"'${_}#'"} @devNames;
+  die "No device named $devNameFmt found\n";
+}
+
+sub readIfconfigDevs(){
+  my @devs;
+  for my $line(`ifconfig -a`){
+    if($line =~ /^(\w+):/){
+      push @devs, $1;
+    }
+  }
+  return @devs;
+}
+
+sub readWinfoDevMappings(){
   my $winfoDev = `winfo --att=dev`;
   chomp $winfoDev;
   $winfoDev =~ s/\s+//g;
   my @devPairs = split /,/, $winfoDev;
+  my $winfoDevs = {};
   for my $pair(@devPairs){
     if($pair !~ /^(\w+):(\w+)$/){
       die "Malformed device pair in dev att {'prefix:device'}: '$pair'\n";
     }
-    my($prefix, $device) = ($1, $2);
-    if($prefix eq $dev){
-      print "$device\n";
-      exit 0;
-    }
+    my ($devName, $device) = ($1, $2);
+    $$winfoDevs{$devName} = $device;
   }
-
-  my @ifconfig = `ifconfig -a`;
-
-  for my $line(@ifconfig){
-    if($line =~ /^($dev\d+):? /){
-      print "$1\n";
-      exit 0;
-    }
-  }
-
-  die "No device named $dev found\n";
+  return $winfoDevs;
 }
 
 &main(@ARGV);
