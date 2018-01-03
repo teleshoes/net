@@ -13,7 +13,7 @@ my $usage = "Usage:
      if winfo has a dev mapping for any <DEV_NAME>
        then print the first mapped device
      otherwise, if any ifconfig device name matches:
-       \"<DEV_NAME>#\" for any <DEV_NAME>
+       \"<DEV_NAME>#\" or \"<DEV_NAME>p#s#\" for any <DEV_NAME>
        then print the first one that matches
 
      DEV_NAME can contain only letters, numbers, and underscores
@@ -25,6 +25,10 @@ my $usage = "Usage:
        if `winfo --att=dev` returns \"\",
        and `ifconfig -a` has a line like \"wlan0: flags...\" in it
          then `$0 wl wlan` => print \"wlan0\"
+
+       if `winfo --att=dev` returns \"\",
+       and `ifconfig -a` has a line like \"wlp0s0: flags...\" in it
+         then `$0 wlan wl` => print \"wlp0s0\"
 ";
 
 sub main(@){
@@ -45,14 +49,14 @@ sub main(@){
   my @ifconfigDevs = readIfconfigDevs();
   for my $devName(@devNames){
     for my $ifconfigDev(@ifconfigDevs){
-      if($ifconfigDev =~ /^(${devName}\d+)$/){
+      if($ifconfigDev =~ /^(${devName}\d+|${devName}p\d+s\d+)$/){
         print "$ifconfigDev\n";
         exit 0;
       }
     }
   }
 
-  my $devNameFmt = join " or ", map {"'${_}#'"} @devNames;
+  my $devNameFmt = join " or ", map {"'${_}#' or '${_}p#s#'"} @devNames;
   die "No device named $devNameFmt found\n";
 }
 
