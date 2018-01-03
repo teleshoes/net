@@ -2,13 +2,17 @@
 use strict;
 use warnings;
 
-my @devs = qw(ppp eth wlan);
+my $devStatuses = {
+  wlan => [qw(wlan)],
+  eth  => [qw(eth)],
+  ppp  => [qw(ppp)],
+};
 my $wconnect = 'wconnect';
 my $wauto = 'wauto';
 my $tethering = 'tethering';
 my $none = 'none';
 
-my $okStatuses = join ',', ($wauto, $tethering, $none, @devs);
+my $okStatuses = join ',', ($wauto, $tethering, $none, sort keys %$devStatuses);
 my $usage = "Usage: $0  print one of [$okStatuses]\n";
 
 sub getDev();
@@ -28,21 +32,21 @@ sub main(@){
 }
 
 sub getDev(){
-  my @devs = qw(ppp eth wlan);
   my $netstat = `ifconfig -s`;
 
-  for my $dev(@devs){
-    my $device = `ifdev $dev 2>/dev/null`;
+  for my $status(sort keys %$devStatuses){
+    my @devs = @{$$devStatuses{$status}};
+    my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
     if($? == 0 and $netstat =~ /^$device /m){
-      if($dev eq 'wlan'){
+      if($status eq 'wlan'){
         my $iwconfig = `iwconfig $device`;
         if($iwconfig =~ /ESSID:off\/any\s*$/m){
           next;
         }
       }
       if(`ifconfig $device` =~ /inet( addr)? \d+/){
-        return $dev;
+        return $status;
       }
     }
   }
