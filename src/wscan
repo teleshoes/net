@@ -50,7 +50,7 @@ sub freqToChannel($);
 sub trimPad($$);
 
 sub main(@){
-  my $dev = `ifdev wlan`;
+  my $dev = `ifdev wl wlan`;
   chomp $dev;
   die "could not find wlan dev\n" if $dev !~ /\w+/;
 
