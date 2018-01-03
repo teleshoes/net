@@ -20,10 +20,10 @@ sub main(@){
 
   die "$0 [on|off] {default: on}" if @_ > 0 or $arg !~ /^(on|off)$/;
 
-  my $dev = `ifdev eth`;
+  my $dev = `ifdev en eth`;
   chomp $dev;
-  if($dev !~ /^eth/){
-    die "no suitable device {i.e. named eth#} found\n";
+  if($dev !~ /^\w+$/){
+    die "no suitable device {i.e. named eth# or enp#s#} found\n";
   }
 
   if($arg eq 'off'){
