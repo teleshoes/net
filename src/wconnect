@@ -45,7 +45,7 @@ sub main(@){
     exec "sudo", "$0", @_;
   }
 
-  my $dev = `ifdev wlan`;
+  my $dev = `ifdev wl wlan`;
   chomp $dev;
 
   die $usage if @_ > 4;
