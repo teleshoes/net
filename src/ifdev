@@ -3,9 +3,25 @@ use strict;
 use warnings;
 
 my $usage = "Usage:
-  $0 devname
-     finds the first device named 'devname#' and prints it
-     if 'dev' attribute is set, uses that instead
+  $0 DEV_NAME
+     finds a net device to match DEV_NAME,
+       using `winfo --att=dev` and `ifconfig -a`
+
+     if winfo has a dev mapping for <DEV_NAME>
+       then print the mapped device
+     otherwise, if any ifconfig device name matches:
+       \"<DEV_NAME>#\"
+       then print the first one that matches
+
+     DEV_NAME can contain only letters, numbers, and underscores
+
+     e.g.:
+       if `winfo --att=dev` returns \"en:eth0,wl:wlan6\":
+         then `$0 wlan` => print \"wlan6\"
+
+       if `winfo --att=dev` returns \"\",
+       and `ifconfig -a` has a line like \"wlan0: flags...\" in it
+         then `$0 wlan` => print \"wlan0\"
 ";
 
 sub main(@){
