@@ -12,7 +12,7 @@ my $STATUS_NONE = "none";
 
 my $statusDevs = {
   $STATUS_WLAN => [qw(wl wlan)],
-  $STATUS_ETH  => [qw(eth)],
+  $STATUS_ETH  => [qw(en eth)],
   $STATUS_PPP  => [qw(ppp)],
 };
 
