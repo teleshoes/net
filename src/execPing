@@ -102,10 +102,10 @@ sub main(@){
   my $exec = shift;
   my @args = @_;
 
-  my $testOnly = not defined $exec;
+  my $hasCommand = defined $exec;
 
   if($watchdog){
-    die $usage if $testOnly;
+    die $usage if not $hasCommand;
     my $failed = 1;
     while(1){
       my $rem = $watchdogAttempts;
@@ -137,27 +137,33 @@ sub main(@){
 
   my $start = time;
   my $count = 0;
+  my $failed = 0;
   while(not attemptPing $url, $ipmagicConf, $deadline, $quiet){
     $count++;
     my $isTimeout = $timeout > 0 && time - $start > $timeout;
     my $isMaxAttempts = $attempts > 0 && $count >= $attempts;
     if($isTimeout or $isMaxAttempts){
-      if($testOnly){
-        print "failed: $url\n";
-        exit 1;
-      }else{
-        die "timeout reached, exiting\n";
-      }
+      $failed = 1;
+      last;
     }
     print STDERR "ping failed, retrying...\n" if not $quiet;
     sleep $delay;
   }
 
-  if($testOnly){
-    print "ok: $url\n";
-    exit 0;
+  if($failed){
+    if($hasCommand){
+      die "timeout reached, exiting\n";
+    }else{
+      print "failed: $url\n";
+      exit 1;
+    }
   }else{
-    exec $exec, @args;
+    if($hasCommand){
+      exec $exec, @args;
+    }else{
+      print "ok: $url\n";
+      exit 0;
+    }
   }
 }
 
