@@ -44,6 +44,9 @@ my $usage = "Usage:
     --watchdog-attempts=INTEGER {default is $defaultWatchdogAttempts}
       sets the number of attempts before running the given command
 
+    --cmd-on-fail-only
+      run command \"EXEC ARG ARG..\" ONLY if URL is NOT ping-able
+
     --deadline=INTEGER          {default is $defaultDeadline}
       seconds to wait for a response for each ping
 
@@ -69,6 +72,7 @@ sub main(@){
   my $url = $defaultUrl;
   my $watchdog = 0;
   my $watchdogAttempts = $defaultWatchdogAttempts;
+  my $cmdOnFailOnly = 0;
   my $deadline = $defaultDeadline;
   my $delay = $defaultDelay;
   my $timeout = $defaultTimeout;
@@ -82,6 +86,8 @@ sub main(@){
       $watchdog = 1;
     }elsif($opt =~ /^--watchdog-attempts=(\d+)$/){
       $watchdogAttempts = $1;
+    }elsif($opt =~ /^--cmd-on-fail-only$/){
+      $cmdOnFailOnly = 1;
     }elsif($opt =~ /^--deadline=(\d+)$/){
       $deadline = $1;
     }elsif($opt =~ /^--delay=(\d+)$/){
@@ -152,14 +158,23 @@ sub main(@){
 
   if($failed){
     if($hasCommand){
-      die "timeout reached, exiting\n";
+      if($cmdOnFailOnly){
+        print STDERR "ping failed with cmd-on-fail-only, running command\n" if not $quiet;
+        exec $exec, @args;
+      }else{
+        die "timeout reached, exiting\n";
+      }
     }else{
       print "failed: $url\n";
       exit 1;
     }
   }else{
     if($hasCommand){
-      exec $exec, @args;
+      if($cmdOnFailOnly){
+        print STDERR "ping successful, not running command\n" if not $quiet;
+      }else{
+        exec $exec, @args;
+      }
     }else{
       print "ok: $url\n";
       exit 0;
