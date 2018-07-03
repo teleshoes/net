@@ -63,15 +63,22 @@ my $usage = "Usage:
 ";
 
 sub main(@){
-  my ($url, $deadline, $delay, $timeout, $attempts, $watchdogAttempts) =
-    ($defaultUrl, $defaultDeadline, $defaultDelay, $defaultTimeout,
-     $defaultAttempts, $defaultWatchdogAttempts);
+  my $url = $defaultUrl;
   my $watchdog = 0;
+  my $watchdogAttempts = $defaultWatchdogAttempts;
+  my $deadline = $defaultDeadline;
+  my $delay = $defaultDelay;
+  my $timeout = $defaultTimeout;
+  my $attempts = $defaultAttempts;
   my $ipmagicConf = undef;
   while(@_ > 0 and $_[0] =~ /^-/){
     my $opt = shift;
     if($opt =~ /^--url=(.*)$/){
       $url = $1;
+    }elsif($opt =~ /^--watchdog$/){
+      $watchdog = 1;
+    }elsif($opt =~ /^--watchdog-attempts=(\d+)$/){
+      $watchdogAttempts = $1;
     }elsif($opt =~ /^--deadline=(\d+)$/){
       $deadline = $1;
     }elsif($opt =~ /^--delay=(\d+)$/){
@@ -82,10 +89,6 @@ sub main(@){
       $attempts = $1;
     }elsif($opt =~ /^--ipmagic=(.*)$/){
       $ipmagicConf = $1;
-    }elsif($opt =~ /^--watchdog-attempts=(\d+)$/){
-      $watchdogAttempts = $1;
-    }elsif($opt =~ /^--watchdog$/){
-      $watchdog = 1;
     }elsif($opt =~ /^(-q|--quiet)$/){
       $quiet = 1;
     }else{
