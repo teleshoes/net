@@ -19,10 +19,13 @@ my $quiet = 0;
 
 my $usage = "Usage:
   $0 [OPTS]
-    Tests if $defaultUrl is ping-able. Prints \"ok: URL\" or \"failed: URL\"
+    Tests if URL is ping-able. Prints \"ok: URL\" or \"failed: URL\"
+      default URL: $defaultUrl
 
   $0 [OPTS] EXEC [ARG ARG ..]
-    Ensure that $defaultUrl is ping-able before running \"EXEC ARG ARG ..\"
+    Ensure that URL is ping-able before running command \"EXEC ARG ARG ..\"
+    Does not run command if URL is not ping-able
+      default URL: $defaultUrl
 
   OPTS:
     --url=URL
