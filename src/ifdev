@@ -7,16 +7,26 @@ sub readWinfoDevMappings();
 
 my $usage = "Usage:
   $0 DEV_TYPE [DEV_TYPE DEV_TYPE ...]
-     finds a net device to match any DEV_TYPE,
+     finds a net device name matching one of the given <DEV_TYPE>s,
        using `winfo --att=dev` and `ifconfig -a`
 
-     if winfo has a dev mapping for any <DEV_TYPE>
-       then print the first mapped device
-     otherwise, if any ifconfig device name matches:
-       \"<DEV_TYPE>#\" or \"<DEV_TYPE>p#s#\" for any <DEV_TYPE>
-       then print the first one that matches
+     if winfo has a <DEV_TYPE>:<DEV_NAME> mapping for any of the given <DEV_TYPE>s,
+       then print the first mapped device's <DEV_NAME>
 
-     DEV_TYPE can contain only letters, numbers, and underscores
+     otherwise, print the first ifconfig device name that matches one of the below:
+        <DEV_TYPE><number>                              -- (old sequential name)
+
+        <DEV_TYPE>b<number>                             -- BCMA bus core number
+        <DEV_TYPE>ccw<name>                             -- CCW bus group name
+        <DEV_TYPE>o<index>[d<dev_port>]                 -- on-board device index number
+        <DEV_TYPE>s<slot>[f<function>][d<dev_port>]     -- hotplug slot index number
+        <DEV_TYPE>x<MAC>                                -- MAC address
+        <DEV_TYPE>[P<domain>]p<bus>s<slot>[f<function>][d<dev_port>]
+                                                        -- PCI geographical location
+        <DEV_TYPE>[P<domain>]p<bus>s<slot>[f<function>][u<port>][..][c<config>][i<interface>]
+                                                        -- USB port number chain
+
+     DEV_TYPE and DEV_NAME can contain only letters, numbers, and underscores
 
      e.g.:
        if `winfo --att=dev` returns \"en:eth0,wl:wlan6\":
@@ -47,10 +57,23 @@ sub main(@){
     }
   }
 
+  my $macRE = "[0-9a-f]{12}";
+
   my @ifconfigDevs = readIfconfigDevNames();
   for my $devType(@devTypes){
     for my $ifconfigDevName(@ifconfigDevs){
-      if($ifconfigDevName =~ /^(${devType}\d+|${devType}p\d+s\d+)$/){
+      if($ifconfigDevName =~ /
+        ^ $devType
+        ( \d+                                                     #old sequential
+        | b\d+                                                    #BCMA bus core
+        | ccw\w+                                                  #CCW bus group
+        | o\d+    (d\d+)?                                         #on-board device
+        | s\d+    (f\d+)? (d\d+)?                                 #hotplug slot
+        | x$macRE                                                 #MAC address
+        | (P\w+)? p\d+    s\d+    (f\w+)? (d\d+)?                 #PCI
+        | (P\w+)? p\d+    s\d+    (f\w+)? (u\d+)* (c\d+)? (i\d+)? #USB port chain
+        ) $
+        /x){
         print "$ifconfigDevName\n";
         exit 0;
       }
