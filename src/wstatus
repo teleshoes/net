@@ -47,6 +47,7 @@ sub getDev(){
     my @devs = @{$$statusDevs{$status}};
     my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
+    next if $device !~ /^\w+$/;
     if($status eq 'wlan'){
       my $iwconfig = `iwconfig $device`;
       if($iwconfig =~ /ESSID:off\/any\s*$/m){
