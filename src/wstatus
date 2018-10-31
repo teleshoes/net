@@ -43,22 +43,18 @@ sub main(@){
 }
 
 sub getDev(){
-  my $netstat = `ifconfig -s`;
-
   for my $status(sort keys %$statusDevs){
     my @devs = @{$$statusDevs{$status}};
     my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
-    if($? == 0 and $netstat =~ /^$device /m){
-      if($status eq 'wlan'){
-        my $iwconfig = `iwconfig $device`;
-        if($iwconfig =~ /ESSID:off\/any\s*$/m){
-          next;
-        }
+    if($status eq 'wlan'){
+      my $iwconfig = `iwconfig $device`;
+      if($iwconfig =~ /ESSID:off\/any\s*$/m){
+        next;
       }
-      if(`ifconfig $device` =~ /inet( addr)? \d+/){
-        return $status;
-      }
+    }
+    if(`ifconfig $device` =~ /inet( addr)? \d+/){
+      return $status;
     }
   }
   return undef;
