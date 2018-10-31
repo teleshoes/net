@@ -45,9 +45,9 @@ my $usage = "Usage:
     print the value if it is present, or nothing if it is absent
     valid ATT_NAMEs: $okAtts
       driver: the driver for wpa_supplicant {see wpa_supplicant -h}
-      dev:    a comma-separated list of prefix:driver pairs
+      dev:    a comma-separated list of \"DEV_TYPE:DEV_NAME\" pairs
               these are read by ifdev and override using ifconfig
-              e.g.:   dev=wlan:eth4,eth:eth5
+              e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
 
   --exact  Always print exact ssid, and match ssid exactly
 ";
