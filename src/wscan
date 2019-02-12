@@ -233,6 +233,7 @@ sub parseCell($){
   my $cell = shift;
 
   my $ssid = $1 if $cell =~ /^\t*SSID: (.*)/m;
+  $ssid = "" if not defined $ssid;
 
   my $dBm = $1 if $cell =~ /^\t*signal: (-?\d+(?:\.\d+)?) dBm$/m;
   my $quality = dBmToQuality $dBm;
