@@ -4,6 +4,7 @@ use warnings;
 
 sub isPingable($$);
 sub attemptPing($$$$);
+sub attemptPingIpmagic($$$);
 sub logWatchdog($);
 
 my $defaultDeadline = 1;
@@ -207,12 +208,20 @@ sub isPingable($$){
 sub attemptPing($$$$){
   my ($url, $ipmagicConf, $deadline, $quiet) = @_;
   if(defined $ipmagicConf){
-    $url = `ipmagic "$ipmagicConf" --ip`;
-    chomp $url;
-    print "Using \"$url\"\n" if not $quiet;
+    return attemptPingIpmagic($ipmagicConf, $deadline, $quiet);
+  }else{
+    return isPingable($url, $deadline);
   }
+}
+
+sub attemptPingIpmagic($$$){
+  my ($ipmagicConf, $deadline, $quiet) = @_;
+  my $url = `ipmagic "$ipmagicConf" --ip`;
+  chomp $url;
+  print "Using \"$url\"\n" if not $quiet;
+
   my $success = isPingable($url, $deadline);
-  if(not $success and defined $ipmagicConf){
+  if(not $success){
     system "ipmagic", $ipmagicConf, "echo ssh $ipmagicConf success!\n";
     $success = $? == 0;
   }
