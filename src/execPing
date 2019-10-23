@@ -184,7 +184,8 @@ sub main(@){
         exec $exec, @args;
       }
     }else{
-      print "ok: $url\n";
+      my $target = defined $ipmagicConf ? $ipmagicConf : $url;
+      print "ok: $target\n";
       exit 0;
     }
   }
