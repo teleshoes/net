@@ -71,7 +71,7 @@ my $usage = "Usage:
 ";
 
 sub main(@){
-  my $url = $defaultUrl;
+  my $url;
   my $watchdog = 0;
   my $watchdogAttempts = $defaultWatchdogAttempts;
   my $cmdOnFailOnly = 0;
@@ -105,6 +105,12 @@ sub main(@){
     }else{
       die $usage;
     }
+  }
+
+  if(defined $url and defined $ipmagicConf){
+    die "cannot use --url and --ipmagic\n";
+  }elsif(not defined $url and not defined $ipmagicConf){
+    $url = $defaultUrl;
   }
 
   my $exec = shift;
