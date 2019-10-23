@@ -2,9 +2,9 @@
 use strict;
 use warnings;
 
-sub isPingable($$);
 sub attemptPing($$$$);
 sub attemptPingIpmagic($$$);
+sub isUrlPingable($$);
 sub logWatchdog($);
 
 my $defaultDeadline = 1;
@@ -200,23 +200,12 @@ sub logWatchdog($){
   print STDERR "$d $msg\n" if not $quiet;
 }
 
-sub isPingable($$){
-  my ($url, $deadline) = @_;
-  $url =~ s/'/'\\''/g;
-  system "ping -c 1 -w $deadline -W $deadline '$url' >/dev/null 2>/dev/null";
-  if($? == 0){
-    return 1;
-  }else{
-    return 0;
-  }
-}
-
 sub attemptPing($$$$){
   my ($url, $ipmagicConf, $deadline, $quiet) = @_;
   if(defined $ipmagicConf){
     return attemptPingIpmagic($ipmagicConf, $deadline, $quiet);
   }else{
-    return isPingable($url, $deadline);
+    return isUrlPingable($url, $deadline);
   }
 }
 
@@ -226,12 +215,23 @@ sub attemptPingIpmagic($$$){
   chomp $url;
   print "Using \"$url\"\n" if not $quiet;
 
-  my $success = isPingable($url, $deadline);
+  my $success = isUrlPingable($url, $deadline);
   if(not $success){
     system "ipmagic", $ipmagicConf, "echo ssh $ipmagicConf success!\n";
     $success = $? == 0;
   }
   return $success;
+}
+
+sub isUrlPingable($$){
+  my ($url, $deadline) = @_;
+  $url =~ s/'/'\\''/g;
+  system "ping -c 1 -w $deadline -W $deadline '$url' >/dev/null 2>/dev/null";
+  if($? == 0){
+    return 1;
+  }else{
+    return 0;
+  }
 }
 
 &main(@ARGV);
