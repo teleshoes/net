@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+sub isPingable($$);
 sub attemptPing($$$$);
 sub logWatchdog($);
 
@@ -192,6 +193,17 @@ sub logWatchdog($){
   print STDERR "$d $msg\n" if not $quiet;
 }
 
+sub isPingable($$){
+  my ($url, $deadline) = @_;
+  $url =~ s/'/'\\''/g;
+  system "ping -c 1 -w $deadline -W $deadline '$url' >/dev/null 2>/dev/null";
+  if($? == 0){
+    return 1;
+  }else{
+    return 0;
+  }
+}
+
 sub attemptPing($$$$){
   my ($url, $ipmagicConf, $deadline, $quiet) = @_;
   if(defined $ipmagicConf){
@@ -199,9 +211,7 @@ sub attemptPing($$$$){
     chomp $url;
     print "Using \"$url\"\n" if not $quiet;
   }
-  $url =~ s/'/'\\''/g;
-  system "ping -c 1 -w $deadline -W $deadline '$url' >/dev/null 2>/dev/null";
-  my $success = $? == 0;
+  my $success = isPingable($url, $deadline);
   if(not $success and defined $ipmagicConf){
     system "ipmagic", $ipmagicConf, "echo ssh $ipmagicConf success!\n";
     $success = $? == 0;
