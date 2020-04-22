@@ -73,6 +73,7 @@ sub down($){
   my $dev = shift;
   print "\ndisconnecting wired $dev\n";
   run "pkill", "-f", "^dhclient $dev\$";
+  run "ifconfig", $dev, "0.0.0.0";
   run "ifconfig", $dev, "down";
 }
 
