@@ -47,6 +47,8 @@ sub cellSort($$);
 sub parseCell($);
 sub dBmToQuality($);
 sub freqToChannel($);
+sub trim($$);
+sub pad($$);
 sub trimPad($$);
 
 sub main(@){
@@ -384,12 +386,24 @@ sub freqToChannel($){
   return $$freqChans{$freq};
 }
 
-sub trimPad($$){
+sub trim($$){
   my ($s, $l) = @_;
   if(length $s > $l){
     $s = substr($s, 0, $l-2) . "..";
   }
-  return $s . ' 'x($l - length $s);
+  return $s;
+}
+sub pad($$){
+  my ($s, $l) = @_;
+  my $padLen = $l - length $s;
+  if($padLen > 0){
+    $s = $s . ' 'x$padLen;
+  }
+  return $s;
+}
+sub trimPad($$){
+  my ($s, $l) = @_;
+  return pad(trim($s, $l), $l);
 }
 
 &main(@ARGV);
