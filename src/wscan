@@ -203,8 +203,12 @@ sub formatScan($$$){
 sub formatCell($$){
   my ($format, $c) = @_;
   if($format eq '--pretty'){
+    my $ssid = $$c{SSID};
+    if($ssid =~ /\x00|\\x00/){
+      $ssid = "{contains nulls}";
+    }
     return ''
-      .     pad($$c{SSID},       32) . " | "
+      .     pad($ssid,           32) . " | "
       . trimPad($$c{QUALITY},     4) . " | "
       . trimPad($$c{CHANNEL},     5) . " | "
       . trimPad($$c{ENCRYPTION},  4) . " | "
