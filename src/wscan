@@ -204,7 +204,7 @@ sub formatCell($$){
   my ($format, $c) = @_;
   if($format eq '--pretty'){
     return ''
-      . trimPad($$c{SSID},       32) . " | "
+      .     pad($$c{SSID},       32) . " | "
       . trimPad($$c{QUALITY},     4) . " | "
       . trimPad($$c{CHANNEL},     5) . " | "
       . trimPad($$c{ENCRYPTION},  4) . " | "
