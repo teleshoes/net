@@ -43,6 +43,12 @@ my $usage = "Usage:
   $0 -g|--get
     cat $stateFile
 
+  $0 -c|--cycle CONFIG_NAME [CONFIG_NAME CONFIG_NAME CONFIG_NAME ...]
+    read CURRENT from $stateFile and cycle between the configs:
+      if CURRENT is the last CONFIG_NAME passed in, set the first CONFIG_NAME
+      if CURRENT is one of the other CONFIG_NAMEs passed in, set the next CONFIG_NAME
+      if CURRENT is empty, missing, or not one of the CONFIG_NAMEs, set the first CONFIG_NAME
+
   $0 -d
     Removes $targetFile
 ";
@@ -65,6 +71,30 @@ sub main(@){
     applyConfigName $_[0];
   }elsif(@_ == 1 and $_[0] =~ /^(-g|--get)$/){
     system "cat", $stateFile;
+  }elsif(@_ >= 2 and $_[0] =~ /^(-c|--cycle)$/){
+    my ($cycleArg, @configNames) = @_;
+
+    my $nextConfName;
+    my $cur = `cat $stateFile 2>/dev/null`;
+    chomp $cur;
+    for(my $i=0; $i<@configNames; $i++){
+      my $confName = $configNames[$i];
+      if($confName =~ /^$cur$/i){
+        my $targetIndex = $i+1;
+        $targetIndex = 0 if $targetIndex > @configNames;
+        $nextConfName = $configNames[$targetIndex];
+        last;
+      }
+    }
+    if(not defined $nextConfName){
+      $nextConfName = $configNames[0];
+    }
+    if($nextConfName =~ /^($okConfigs)$/){
+      print "resolv: \"$cur\" => \"$nextConfName\"\n";
+      applyConfigName $nextConfName;
+    }else{
+      die "ERROR: \"$nextConfName\" is not a valid config name\n";
+    }
   }else{
     die $usage;
   }
