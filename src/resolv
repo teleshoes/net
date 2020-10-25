@@ -25,7 +25,7 @@ my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
 my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
 my $okConfigs = join "|", getAvailableConfigs();
-my $stateFile = "$configDir/current";
+my $stateFile = "/etc/resolv.conf.confname";
 
 my $usage = "Usage:
   $0 [CONFIG_NAME]   {available: $okConfigs}
