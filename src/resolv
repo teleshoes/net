@@ -18,24 +18,27 @@ use warnings;
 sub applyConfigName($);
 sub getAvailableConfigs();
 sub removeResolv();
-sub replaceResolv($);
+sub replaceResolv($$);
 
 my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
 
 my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
 my $okConfigs = join "|", getAvailableConfigs();
+my $stateFile = "$configDir/current";
 
 my $usage = "Usage:
   $0 [CONFIG_NAME]   {available: $okConfigs}
     Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
       and makes it read-only with chattr +i.
+    Write CONFIG_NAME to $stateFile
     CONFIG_NAME must be [a-z]+ {lowercase letters only}.
     'default' is assumed if CONFIG_NAME is omitted.
 
   $0 FILE_NAME
     Copies FILE_NAME to $targetFile
       and makes it read-only with chattr +i
+    Write FILE_NAME to $stateFile
 
   $0 -d
     Removes $targetFile
@@ -47,9 +50,10 @@ sub main(@){
     exit 0;
   }elsif(@_ == 1 and -f $_[0]){
     my $file = $_[0];
-    print "reolv: applying $file:\n====\n";
+    print "resolv: applying $file:\n====\n";
     system "cat", $file;
-    replaceResolv $file;
+    my $confName = $file;
+    replaceResolv $confName, $file;
   }elsif(not -d $configDir){
     print STDERR "WARN: $configDir does not exist, skipping resolv\n";
   }elsif(@_ == 0){
@@ -74,7 +78,7 @@ sub applyConfigName($){
   }
   print "\n";
 
-  replaceResolv $file;
+  replaceResolv $confName, $file;
 }
 
 sub getAvailableConfigs(){
@@ -89,14 +93,18 @@ sub removeResolv(){
   if(-e $targetFile){
     system "chattr", "-i", $targetFile;
     system "rm", "-f", $targetFile;
+    system "rm", $stateFile;
   }
 }
 
-sub replaceResolv($){
-  my ($file) = @_;
+sub replaceResolv($$){
+  my ($confName, $file) = @_;
   removeResolv();
   system "cp", $file, $targetFile;
   system "chattr", "+i", $targetFile;
+  open FH, "> $stateFile" or die "ERROR: could not write $stateFile\n$!\n";
+  print FH "$confName\n";
+  close FH;
 }
 
 &main(@ARGV);
