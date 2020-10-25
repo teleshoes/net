@@ -40,6 +40,9 @@ my $usage = "Usage:
       and makes it read-only with chattr +i
     Write FILE_NAME to $stateFile
 
+  $0 -g|--get
+    cat $stateFile
+
   $0 -d
     Removes $targetFile
 ";
@@ -60,6 +63,8 @@ sub main(@){
     applyConfigName "default";
   }elsif(@_ == 1 and $_[0] =~ /^($okConfigs)$/){
     applyConfigName $_[0];
+  }elsif(@_ == 1 and $_[0] =~ /^(-g|--get)$/){
+    system "cat", $stateFile;
   }else{
     die $usage;
   }
