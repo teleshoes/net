@@ -19,7 +19,7 @@ my $str = "(?:$quotedStr|$unquotedStr)";
 my $lineRegex = qr/^\s*($str)\s*($str)\s*($str)\s*($str)\s*\n$/;
 
 my $wscanExec = "wscan";
-my $validEncs = "wep|wpa|none";
+my $validEncs = "wep|wpa|wpa2|none";
 my $encDefault = 'none';
 my $validModes = "ad-hoc|managed|master|repeater|secondary|monitor|auto";
 my $modeDefault = 'managed';
