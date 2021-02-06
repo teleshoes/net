@@ -48,7 +48,7 @@ my $usage = "Usage:
     -convert SSIDs to lowercase and replace ' ' with '_'
     -print converted SSIDs, one per line
 
-  $EXEC [OPTS] --list-auto
+  $EXEC [OPTS] --list-auto|--auto
     -fetch all auto-connecting SSIDs from $autoConf
     -convert SSIDs to lowercase and replace ' ' with '_'
     -print converted SSIDs and auto-priorities, in decreasing order of priority
@@ -113,7 +113,7 @@ sub main(@){
       $cmd = $COMMAND_SCAN;
     }elsif($arg =~ /^(--list|--list-conf|--list-all)$/){
       $cmd = $COMMAND_LIST_CONF;
-    }elsif($arg =~ /^(--list-auto)$/){
+    }elsif($arg =~ /^(--list-auto|--auto)$/){
       $cmd = $COMMAND_LIST_AUTO;
     }elsif($arg =~ /^(--get-att)$/){
       $cmd = $COMMAND_GET_ATT;
