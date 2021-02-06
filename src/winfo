@@ -133,7 +133,8 @@ sub main(@){
       print "$autos{$ssid}:$ssidFmt\n";
     }
   }elsif(defined $scanned and defined $targetSSID){
-    for my $cell(`$wscanExec -l --info`){
+    my @cells = `$wscanExec -l --info`;
+    for my $cell(@cells){
       if($cell =~ /^(.*),(\d+\%),(ch\d+),($validEncs),($validModes),(.*)$/i){
         my ($ssid, $qual, $chan, $enc, $mode, $note) = ($1, $2, $3, $4, $5, $6);
         my $found = 0;
@@ -142,6 +143,8 @@ sub main(@){
         if($found){
           print "ssid:$ssid\nenc:$enc\nmode:$mode\n";
         }
+      }else{
+        die "ERROR: malformed cell $cell\n";
       }
     }
   }elsif(defined $targetSSID){
