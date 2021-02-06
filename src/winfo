@@ -43,21 +43,26 @@ my $usage = "Usage:
     -print exact ssid, enc, and mode
 
   $EXEC [OPTS] --list-auto
-    prints all auto-connectable SSIDs in config and their priority
-    SSIDs are printed in lowercase, with ' ' replaced with '_'
+    -fetch all auto-connecting SSIDs from $autoConf
+    -convert SSIDs to lowercase and replace ' ' with '_'
+    -print converted SSIDs and auto-priorities, in decreasing order of priority
 
   $EXEC [OPTS] --list|--list-all
-    prints all SSIDs in config
-    SSIDs are printed in lowercase, with ' ' replaced with '_'
+    -fetch all entries in $netConf
+    -convert SSIDs to lowercase and replace ' ' with '_'
+    -print converted SSIDs, one per line
 
   $EXEC [OPTS] --att=ATT_NAME
-    find 'ATT_NAME=' line in $netConf
-    print the value if it is present, or nothing if it is absent
-    valid ATT_NAMEs: $okAtts
-      driver: the driver for wpa_supplicant {see wpa_supplicant -h}
-      dev:    a comma-separated list of \"DEV_TYPE:DEV_NAME\" pairs
-              these are read by ifdev and override using ifconfig
-              e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
+    -find 'ATT_NAME=' line in $netConf
+    -print the value if it is present, or nothing if it is absent
+
+    ATT_NAME
+      driver
+        the driver for wpa_supplicant {see wpa_supplicant -h}
+      dev
+        a comma-separated list of \"DEV_TYPE:DEV_NAME\" pairs
+        these are read by ifdev and override using ifconfig
+          e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
 
   OPTS
     --exact
