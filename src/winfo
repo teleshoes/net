@@ -69,6 +69,11 @@ my $usage = "Usage:
   OPTS
     --exact
       Always print exact ssid, and match ssid exactly
+
+    --ssid
+      print just the value of SSID in --info
+    --key
+      print just the value of encryption key in --info
 ";
 
 my $format = ''
@@ -102,6 +107,8 @@ sub main(@){
   my $targetSSID = undef;
   my $targetAtt = undef;
   my $exact = 0;
+  my $ssidOnly = 0;
+  my $keyOnly = 0;
   while(@_ > 0){
     my $arg = shift;
     if($arg =~ /^(-h|--help)$/){
@@ -122,6 +129,10 @@ sub main(@){
       $targetAtt = $1;
     }elsif($arg =~ /^(--exact)$/){
       $exact = 1;
+    }elsif($arg =~ /^(--ssid)$/){
+      $ssidOnly = 1;
+    }elsif($arg =~ /^(--key)$/){
+      $keyOnly = 1;
     }else{
       if(defined $targetSSID){
         die "$usage\nERROR: multiple SSIDs given \"$targetSSID\" \"$arg\"\n";
@@ -164,7 +175,13 @@ sub main(@){
     if(defined $entry){
       my ($ssid, $enc, $key, $mode) = @{$entry};
       my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
-      print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
+      if($ssidOnly){
+        print "$ssid\n";
+      }elsif($keyOnly){
+        print "$key\n";
+      }else{
+        print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
+      }
     }else{
       print STDERR "SSID NOT FOUND: $targetSSID\n";
     }
