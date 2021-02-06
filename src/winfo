@@ -159,6 +159,8 @@ sub main(@){
     }else{
       print STDERR "SSID NOT FOUND: $targetSSID\n";
     }
+  }else{
+    die $usage;
   }
 }
 
