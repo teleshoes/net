@@ -75,23 +75,26 @@ my $format = ''
 ;
 
 sub main(@){
-  my $exact = 0;
-  $exact = shift if @_ >1 and $_[0] eq '--exact';
   my ($targetSSID, $scanned, $listAll, $listAuto, $att);
-  if(@_ == 1 and $_[0] =~ /^(--list|--list-all)$/){
-    $listAll = 1;
-  }elsif(@_ == 1 and $_[0] eq '--list-auto'){
-    $listAuto = 1;
-  }elsif(@_ == 2 and $_[0] eq '--scanned'){
-    $scanned = shift;
-    $targetSSID = shift;
-  }elsif(@_ == 1 and $_[0] =~ /^--att=($okAtts)$/){
-    shift;
-    $att = $1;
-  }elsif(@_ == 1){
-    $targetSSID = shift;
-  }else{
-    die $usage;
+  my $exact = 0;
+  while(@_ > 0){
+    my $arg = shift;
+    if($arg =~ /^(--exact)$/){
+      $exact = 1;
+    }elsif($arg =~ /^(--list|--list-all)$/){
+      $listAll = 1;
+    }elsif($arg =~ /^(--list-auto)$/){
+      $listAuto = 1;
+    }elsif($arg =~ /^(--scanned)$/){
+      $scanned = 1;
+    }elsif($arg =~ /^--att=($okAtts)$/){
+      $att = $1;
+    }else{
+      if(defined $targetSSID){
+        die "$usage\nERROR: multiple SSIDs given \"$targetSSID\" \"$arg\"\n";
+      }
+      $targetSSID = $arg;
+    }
   }
 
   my %entries;
