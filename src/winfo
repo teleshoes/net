@@ -33,36 +33,38 @@ my $usage = "Usage:
     show this message
 
   $EXEC [OPTS] SSID
+  $EXEC [OPTS] --info SSID
     -search $netConf
     -find an entry with SSID like <SSID>, case insensitive, with '_' matching '_' or ' '
     -print exact ssid, enc, key, mode, and auto
 
-  $EXEC [OPTS] --scanned SSID
+  $EXEC [OPTS] --scan|--scanned|--wscan|--last-scan SSID
     -fetch the latest scan with `$wscanExec -l`
     -find a cell with SSID like <SSID>, case insensitive, with '_' matching '_' or ' '
     -print exact ssid, enc, and mode
+
+  $EXEC [OPTS] --list|--list-conf|--list-all
+    -fetch all entries in $netConf
+    -convert SSIDs to lowercase and replace ' ' with '_'
+    -print converted SSIDs, one per line
 
   $EXEC [OPTS] --list-auto
     -fetch all auto-connecting SSIDs from $autoConf
     -convert SSIDs to lowercase and replace ' ' with '_'
     -print converted SSIDs and auto-priorities, in decreasing order of priority
 
-  $EXEC [OPTS] --list|--list-all
-    -fetch all entries in $netConf
-    -convert SSIDs to lowercase and replace ' ' with '_'
-    -print converted SSIDs, one per line
+  $EXEC [OPTS] --get-att --att=CONF_ATT_NAME
+  $EXEC [OPTS] --att=CONF_ATT_NAME
+    -find '<CONF_ATT_NAME>=<VALUE>' line in $netConf
+    -print the <VALUE> if found, or nothing if it is absent
 
-  $EXEC [OPTS] --att=ATT_NAME
-    -find 'ATT_NAME=' line in $netConf
-    -print the value if it is present, or nothing if it is absent
-
-    ATT_NAME
-      driver
-        the driver for wpa_supplicant {see wpa_supplicant -h}
-      dev
-        a comma-separated list of \"DEV_TYPE:DEV_NAME\" pairs
-        these are read by ifdev and override using ifconfig
-          e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
+  CONF_ATT_NAME
+    driver
+      the driver for wpa_supplicant {see wpa_supplicant -h}
+    dev
+      a comma-separated list of \"DEV_TYPE:DEV_NAME\" pairs
+      these are read by ifdev and override using ifconfig
+        e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
 
   OPTS
     --exact
@@ -89,24 +91,37 @@ my $format = ''
   . "      one of $validModes\n"
 ;
 
+my $COMMAND_INFO = "info";
+my $COMMAND_SCAN = "scan";
+my $COMMAND_LIST_CONF = "list-conf";
+my $COMMAND_LIST_AUTO = "list-auto";
+my $COMMAND_GET_ATT = "get-att";
+
 sub main(@){
-  my ($targetSSID, $scanned, $listAll, $listAuto, $att);
+  my $cmd;
+  my $targetSSID = undef;
+  my $targetAtt = undef;
   my $exact = 0;
   while(@_ > 0){
     my $arg = shift;
     if($arg =~ /^(-h|--help)$/){
       print $usage;
       exit 0;
+    }elsif($arg =~ /^(--info)$/){
+      $cmd = $COMMAND_INFO;
+    }elsif($arg =~ /^(--scanned|--scan|--wscan|--last-scan)$/){
+      $cmd = $COMMAND_SCAN;
+    }elsif($arg =~ /^(--list|--list-conf|--list-all)$/){
+      $cmd = $COMMAND_LIST_CONF;
+    }elsif($arg =~ /^(--list-auto)$/){
+      $cmd = $COMMAND_LIST_AUTO;
+    }elsif($arg =~ /^(--get-att)$/){
+      $cmd = $COMMAND_GET_ATT;
+    }elsif($arg =~ /^--att=($okAtts)$/){
+      $cmd = $COMMAND_GET_ATT;
+      $targetAtt = $1;
     }elsif($arg =~ /^(--exact)$/){
       $exact = 1;
-    }elsif($arg =~ /^(--list|--list-all)$/){
-      $listAll = 1;
-    }elsif($arg =~ /^(--list-auto)$/){
-      $listAuto = 1;
-    }elsif($arg =~ /^(--scanned)$/){
-      $scanned = 1;
-    }elsif($arg =~ /^--att=($okAtts)$/){
-      $att = $1;
     }else{
       if(defined $targetSSID){
         die "$usage\nERROR: multiple SSIDs given \"$targetSSID\" \"$arg\"\n";
@@ -114,6 +129,8 @@ sub main(@){
       $targetSSID = $arg;
     }
   }
+
+  $cmd = "info" if not defined $cmd;
 
   my %entries;
   my %fuzzyEntries;
@@ -133,24 +150,27 @@ sub main(@){
     $fuzzyEntries{fuzzy($ssid)} = $entry;
   }
 
-  if(defined $att){
-    print "$attributes{$att}\n" if defined $attributes{$att};
-    exit 0;
-  }
-
   my $count = 1;
   my @autoLines = `cat $autoConf 2>/dev/null` if defined $autoConf;
   my %autos = map{chomp; ($_ => $count++)} @autoLines;
 
-  if(defined $listAll){
-    my @ssids = sort $exact ? keys %entries : keys %fuzzyEntries;
-    print join("\n", @ssids) . "\n";
-  }elsif(defined $listAuto){
-    for my $ssid(sort {$autos{$a} <=> $autos{$b}} keys %autos){
-      my $ssidFmt = $exact ? $ssid : fuzzy($ssid);
-      print "$autos{$ssid}:$ssidFmt\n";
+  if($cmd eq $COMMAND_INFO){
+    die "ERROR: must specify SSID for $cmd\n" if not defined $targetSSID;
+    die "ERROR: cannot specify CONF_ATT_NAME for $cmd\n" if defined $targetAtt;
+    my $entry = $entries{$targetSSID};
+    if(not defined $entry and not $exact){
+      $entry = $fuzzyEntries{fuzzy $targetSSID};
     }
-  }elsif(defined $scanned and defined $targetSSID){
+    if(defined $entry){
+      my ($ssid, $enc, $key, $mode) = @{$entry};
+      my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
+      print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
+    }else{
+      print STDERR "SSID NOT FOUND: $targetSSID\n";
+    }
+  }elsif($cmd eq $COMMAND_SCAN){
+    die "ERROR: must specify SSID for $cmd\n" if not defined $targetSSID;
+    die "ERROR: cannot specify CONF_ATT_NAME for $cmd\n" if defined $targetAtt;
     my @cells = `$wscanExec -l --info`;
     for my $cell(@cells){
       if($cell =~ /^(.*),(\d+\%),(ch\d+),($validEncs),($validModes),(.*)$/i){
@@ -165,18 +185,23 @@ sub main(@){
         die "ERROR: malformed cell $cell\n";
       }
     }
-  }elsif(defined $targetSSID){
-    my $entry = $entries{$targetSSID};
-    if(not defined $entry and not $exact){
-      $entry = $fuzzyEntries{fuzzy $targetSSID};
+  }elsif($cmd eq $COMMAND_LIST_CONF){
+    die "ERROR: cannot specify SSID for $cmd\n" if defined $targetSSID;
+    die "ERROR: cannot specify CONF_ATT_NAME for $cmd\n" if defined $targetAtt;
+    my @ssids = sort $exact ? keys %entries : keys %fuzzyEntries;
+    print join("\n", @ssids) . "\n";
+  }elsif($cmd eq $COMMAND_LIST_AUTO){
+    die "ERROR: cannot specify SSID for $cmd\n" if defined $targetSSID;
+    die "ERROR: cannot specify CONF_ATT_NAME for $cmd\n" if defined $targetAtt;
+    for my $ssid(sort {$autos{$a} <=> $autos{$b}} keys %autos){
+      my $ssidFmt = $exact ? $ssid : fuzzy($ssid);
+      print "$autos{$ssid}:$ssidFmt\n";
     }
-    if(defined $entry){
-      my ($ssid, $enc, $key, $mode) = @{$entry};
-      my $auto = defined $autos{$ssid} ? $autos{$ssid} : '';
-      print "ssid:$ssid\nenc:$enc\nkey:$key\nmode:$mode\nauto:$auto\n";
-    }else{
-      print STDERR "SSID NOT FOUND: $targetSSID\n";
-    }
+  }elsif($cmd eq $COMMAND_GET_ATT){
+    die "ERROR: cannot specify SSID for $cmd\n" if defined $targetSSID;
+    die "ERROR: must specify CONF_ATT_NAME for $cmd\n" if not defined $targetAtt;
+    print "$attributes{$targetAtt}\n" if defined $attributes{$targetAtt};
+    exit 0;
   }else{
     die $usage;
   }
