@@ -29,20 +29,27 @@ my $okAtts = join "|", qw( dev driver );
 my $EXEC = basename $0;
 
 my $usage = "Usage:
+  $EXEC -h|--help
+    show this message
+
   $EXEC [OPTS] SSID
     match the argument against $netConf,
       without regard to case, and with '_' matching ' ' or '_'.
     prints exact ssid, enc, key, mode, and auto
+
   $EXEC [OPTS] --scanned SSID
     match the argument against $netConf,
       without regard to case, and with '_' matching ' ' or '_'.
     prints exact ssid, enc, key, mode, and auto
+
   $EXEC [OPTS] --list-auto
     prints all auto-connectable SSIDs in config and their priority
     SSIDs are printed in lowercase, with ' ' replaced with '_'
+
   $EXEC [OPTS] --list|--list-all
     prints all SSIDs in config
     SSIDs are printed in lowercase, with ' ' replaced with '_'
+
   $EXEC [OPTS] --att=ATT_NAME
     find 'ATT_NAME=' line in $netConf
     print the value if it is present, or nothing if it is absent
@@ -82,7 +89,10 @@ sub main(@){
   my $exact = 0;
   while(@_ > 0){
     my $arg = shift;
-    if($arg =~ /^(--exact)$/){
+    if($arg =~ /^(-h|--help)$/){
+      print $usage;
+      exit 0;
+    }elsif($arg =~ /^(--exact)$/){
       $exact = 1;
     }elsif($arg =~ /^(--list|--list-all)$/){
       $listAll = 1;
