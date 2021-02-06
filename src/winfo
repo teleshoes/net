@@ -26,21 +26,21 @@ my $modeDefault = 'managed';
 my $okAtts = join "|", qw( dev driver );
 
 my $usage = "Usage:
-  $0 [--exact] SSID
+  $0 [OPTS] SSID
     match the argument against $netConf,
       without regard to case, and with '_' matching ' ' or '_'.
     prints exact ssid, enc, key, mode, and auto
-  $0 [--exact] --scanned SSID
+  $0 [OPTS] --scanned SSID
     match the argument against $netConf,
       without regard to case, and with '_' matching ' ' or '_'.
     prints exact ssid, enc, key, mode, and auto
-  $0 [--exact] --list-auto
+  $0 [OPTS] --list-auto
     prints all auto-connectable SSIDs in config and their priority
     SSIDs are printed in lowercase, with ' ' replaced with '_'
-  $0 [--exact] --list|--list-all
+  $0 [OPTS] --list|--list-all
     prints all SSIDs in config
     SSIDs are printed in lowercase, with ' ' replaced with '_'
-  $0 [--exact] --att=ATT_NAME
+  $0 [OPTS] --att=ATT_NAME
     find 'ATT_NAME=' line in $netConf
     print the value if it is present, or nothing if it is absent
     valid ATT_NAMEs: $okAtts
@@ -49,7 +49,9 @@ my $usage = "Usage:
               these are read by ifdev and override using ifconfig
               e.g.:   dev=wl:wlp2s3,wlan:eth4,eth:eth5
 
-  --exact  Always print exact ssid, and match ssid exactly
+  OPTS
+    --exact
+      Always print exact ssid, and match ssid exactly
 ";
 
 my $format = ''
