@@ -38,9 +38,9 @@ my $usage = "Usage:
     -print exact ssid, enc, key, mode, and auto
 
   $EXEC [OPTS] --scanned SSID
-    match the argument against $netConf,
-      without regard to case, and with '_' matching ' ' or '_'.
-    prints exact ssid, enc, key, mode, and auto
+    -fetch the latest scan with `$wscanExec -l`
+    -find a cell with SSID like <SSID>, case insensitive, with '_' matching '_' or ' '
+    -print exact ssid, enc, and mode
 
   $EXEC [OPTS] --list-auto
     prints all auto-connectable SSIDs in config and their priority
