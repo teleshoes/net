@@ -16,15 +16,19 @@ my $statusDevs = {
   $STATUS_PPP  => [qw(ppp)],
 };
 
-my @allStatuses = ($STATUS_WLAN, $STATUS_ETH, $STATUS_PPP,
-  $STATUS_WCONNECT, $STATUS_WAUTO, $STATUS_TETHERING, $STATUS_NONE);
-
 my $usage = "Usage:
   $0 -h | --help
     show this message
 
   $0
-    print one of:  [" . join(",", @allStatuses) . "]
+    -use `ifdev`, `iwconfig`, and `ifconfig` to get the ACTIVE_NETWORK_DEVICE
+    -check if any of RUNNING_PROCESS found for `wconnect`, `wauto`, `pppd`, `wvdial`
+    -if ACTIVE_NETWORK_DEVICE found:
+      -print one of: $STATUS_WLAN $STATUS_ETH $STATUS_PPP
+    -if RUNNING_PROCESS found:
+      -print one of: $STATUS_WCONNECT $STATUS_WAUTO $STATUS_TETHERING
+    -otherwise:
+      -print $STATUS_NONE
 ";
 
 sub getDev();
