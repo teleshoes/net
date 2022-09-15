@@ -20,6 +20,9 @@ my @allStatuses = ($STATUS_WLAN, $STATUS_ETH, $STATUS_PPP,
   $STATUS_WCONNECT, $STATUS_WAUTO, $STATUS_TETHERING, $STATUS_NONE);
 
 my $usage = "Usage:
+  $0 -h | --help
+    show this message
+
   $0
     print one of:  [" . join(",", @allStatuses) . "]
 ";
@@ -30,6 +33,15 @@ sub isWauto();
 sub isTethering();
 
 sub main(@){
+  while(@_ > 0){
+    my $arg = shift @_;
+    if($arg =~ /^(-h|--help)$/){
+      print $usage;
+       exit 0;
+    }else{
+      die "$usage\nERROR: unknown arg $arg\n";
+    }
+  }
   die $usage if @_ > 0;
   my $devStatus = getDev();
 
