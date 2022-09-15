@@ -10,11 +10,13 @@ my $STATUS_WAUTO = "wauto";
 my $STATUS_TETHERING = "tethering";
 my $STATUS_NONE = "none";
 
-my $statusDevs = {
+my $DEVICES_BY_STATUS = {
   $STATUS_WLAN => [qw(wl wlan)],
   $STATUS_ETH  => [qw(en eth)],
   $STATUS_PPP  => [qw(ppp)],
 };
+
+my $MODE_GET_STATUS = "get-status";
 
 my $usage = "Usage:
   $0 -h | --help
@@ -31,12 +33,13 @@ my $usage = "Usage:
       -print $STATUS_NONE
 ";
 
-sub getDev();
+sub getDevStatus();
 sub isWconnect();
 sub isWauto();
 sub isTethering();
 
 sub main(@){
+  my $mode = $MODE_GET_STATUS;
   while(@_ > 0){
     my $arg = shift @_;
     if($arg =~ /^(-h|--help)$/){
@@ -46,35 +49,39 @@ sub main(@){
       die "$usage\nERROR: unknown arg $arg\n";
     }
   }
-  die $usage if @_ > 0;
-  my $devStatus = getDev();
+  my ($device, $devStatus) = getDevStatus();
 
   my $status = undef;
-  $status = $devStatus if not defined $status and defined $devStatus;
-  $status = $STATUS_WCONNECT if not defined $status and isWconnect();
-  $status = $STATUS_WAUTO if not defined $status and isWauto();
+  $status = $devStatus        if not defined $status and defined $devStatus;
+  $status = $STATUS_WCONNECT  if not defined $status and isWconnect();
+  $status = $STATUS_WAUTO     if not defined $status and isWauto();
   $status = $STATUS_TETHERING if not defined $status and isTethering();
-  $status = $STATUS_NONE if not defined $status;
-  print "$status\n";
+  $status = $STATUS_NONE      if not defined $status;
+
+  if($mode eq $MODE_GET_STATUS){
+    print "$status\n";
+  }else{
+    die "ERROR: unknown mode $mode\n";
+  }
 }
 
-sub getDev(){
-  for my $status(sort keys %$statusDevs){
-    my @devs = @{$$statusDevs{$status}};
+sub getDevStatus(){
+  for my $devStatus(sort keys %$DEVICES_BY_STATUS){
+    my @devs = @{$$DEVICES_BY_STATUS{$devStatus}};
     my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
     next if $device !~ /^\w+$/;
-    if($status eq 'wlan'){
+    if($devStatus eq $STATUS_WLAN){
       my $iwconfig = `iwconfig $device`;
       if($iwconfig =~ /ESSID:off\/any\s*$/m){
-        next;
+        next; #ignore ifconfig for unassociated wlan dev
       }
     }
     if(`ifconfig $device` =~ /inet( addr)? \d+/){
-      return $status;
+      return ($device, $devStatus);
     }
   }
-  return undef;
+  return (undef, undef);
 }
 
 sub isWconnect(){
