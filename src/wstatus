@@ -17,6 +17,7 @@ my $DEVICES_BY_STATUS = {
 };
 
 my $MODE_GET_STATUS = "get-status";
+my $MODE_GET_SSID = "get-ssid";
 
 my $usage = "Usage:
   $0 -h | --help
@@ -31,6 +32,12 @@ my $usage = "Usage:
       -print one of: $STATUS_WCONNECT $STATUS_WAUTO $STATUS_TETHERING
     -otherwise:
       -print $STATUS_NONE
+
+  $0 --ssid
+    if STATUS is $STATUS_WLAN:
+      extract SSID from `iwconfig` and print it
+    otherwise:
+      print nothing
 ";
 
 sub getDevStatus();
@@ -45,11 +52,13 @@ sub main(@){
     if($arg =~ /^(-h|--help)$/){
       print $usage;
        exit 0;
+    }elsif($arg =~ /^(--ssid)$/){
+      $mode = $MODE_GET_SSID;
     }else{
       die "$usage\nERROR: unknown arg $arg\n";
     }
   }
-  my ($device, $devStatus) = getDevStatus();
+  my ($device, $devStatus, $ssid) = getDevStatus();
 
   my $status = undef;
   $status = $devStatus        if not defined $status and defined $devStatus;
@@ -60,6 +69,10 @@ sub main(@){
 
   if($mode eq $MODE_GET_STATUS){
     print "$status\n";
+  }elsif($mode eq $MODE_GET_SSID){
+    if($status eq $STATUS_WLAN and defined $ssid){
+      print "$ssid\n";
+    }
   }else{
     die "ERROR: unknown mode $mode\n";
   }
@@ -71,17 +84,20 @@ sub getDevStatus(){
     my $device = `ifdev @devs 2>/dev/null`;
     chomp $device;
     next if $device !~ /^\w+$/;
+    my $ssid = undef;
     if($devStatus eq $STATUS_WLAN){
-      my $iwconfig = `iwconfig $device`;
+      my $iwconfig = `iwconfig $device | head -1`;
       if($iwconfig =~ /ESSID:off\/any\s*$/m){
         next; #ignore ifconfig for unassociated wlan dev
+      }elsif($iwconfig =~ /ESSID:"(.+)"\s*$/m){
+        $ssid = $1;
       }
     }
     if(`ifconfig $device` =~ /inet( addr)? \d+/){
-      return ($device, $devStatus);
+      return ($device, $devStatus, $ssid);
     }
   }
-  return (undef, undef);
+  return (undef, undef, undef);
 }
 
 sub isWconnect(){
