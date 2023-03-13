@@ -93,7 +93,7 @@ sub getDevStatus(){
         next; #ignore ifconfig for unassociated wlan dev
       }
     }
-    if(`ifconfig $device` =~ /inet( addr)? \d+/){
+    if(`ifconfig $device` =~ /inet( addr)?[ :]\d+/){
       return ($device, $devStatus, $ssid);
     }
   }
