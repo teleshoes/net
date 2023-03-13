@@ -87,7 +87,7 @@ sub main(@){
 sub readIfconfigDevNames(){
   my @ifconfigDevNames;
   for my $line(`ifconfig -a`){
-    if($line =~ /^(\w+):/){
+    if($line =~ /^(\w+):?/){
       my $ifconfigDevName = $1;
       push @ifconfigDevNames, $ifconfigDevName;
     }
