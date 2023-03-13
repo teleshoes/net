@@ -24,7 +24,7 @@ my $usage = "Usage:
     show this message
 
   $0
-    -use `ifdev`, `iwconfig`, and `ifconfig` to get the ACTIVE_NETWORK_DEVICE
+    -use `ifdev`, `iw`, and `ifconfig` to get the ACTIVE_NETWORK_DEVICE
     -check if any of RUNNING_PROCESS found for `wconnect`, `wauto`, `pppd`, `wvdial`
     -if ACTIVE_NETWORK_DEVICE found:
       -print one of: $STATUS_WLAN $STATUS_ETH $STATUS_PPP
@@ -35,7 +35,7 @@ my $usage = "Usage:
 
   $0 --ssid
     if STATUS is $STATUS_WLAN:
-      extract SSID from `iwconfig` and print it
+      extract SSID from `iw` and print it
     otherwise:
       print nothing
 ";
@@ -86,11 +86,11 @@ sub getDevStatus(){
     next if $device !~ /^\w+$/;
     my $ssid = undef;
     if($devStatus eq $STATUS_WLAN){
-      my $iwconfig = `iwconfig $device | head -1`;
-      if($iwconfig =~ /ESSID:off\/any\s*$/m){
-        next; #ignore ifconfig for unassociated wlan dev
-      }elsif($iwconfig =~ /ESSID:"(.+)"\s*$/m){
+      my $iw = `iw dev $device info`;
+      if($iw =~ /ssid (.+)/m){
         $ssid = $1;
+      }else{
+        next; #ignore ifconfig for unassociated wlan dev
       }
     }
     if(`ifconfig $device` =~ /inet( addr)? \d+/){
