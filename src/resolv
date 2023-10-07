@@ -24,6 +24,7 @@ my $home = defined $ENV{HOME} ? $ENV{HOME} : "";
 
 my $targetFile = '/etc/resolv.conf';
 my $configDir = "$home/resolv";
+my $cycleDefault = "$home/resolv/cycle-default";
 my $okConfigs = join "|", getAvailableConfigs();
 my $stateFile = "/etc/resolv.conf.confname";
 
@@ -49,6 +50,10 @@ my $usage = "Usage:
       if CURRENT is one of the other CONFIG_NAMEs passed in, set the next CONFIG_NAME
       if CURRENT is empty, missing, or not one of the CONFIG_NAMEs, set the first CONFIG_NAME
 
+  $0 -c|--cycle
+    read CONFIG_NAMEs, separated by whitespace or newlines, from $cycleDefault
+    same as $0 --cycle CONFIG_NAME [CONFIG_NAME CONFIG_NAME...]
+
   $0 -d
     Removes $targetFile
 ";
@@ -71,8 +76,16 @@ sub main(@){
     applyConfigName $_[0];
   }elsif(@_ == 1 and $_[0] =~ /^(-g|--get)$/){
     system "cat", $stateFile;
-  }elsif(@_ >= 2 and $_[0] =~ /^(-c|--cycle)$/){
+  }elsif(@_ >= 1 and $_[0] =~ /^(-c|--cycle)$/){
     my ($cycleArg, @configNames) = @_;
+
+    if(@configNames == 0){
+      my $out = `cat $cycleDefault 2>/dev/null`;
+      @configNames = grep {/^\w+$/} split /[ \t\r\n]+/, $out;
+    }
+    if(@configNames == 0){
+      die "ERROR: no CONFIG_NAMEs given or found in $cycleDefault\n";
+    }
 
     my $nextConfName;
     my $cur = `cat $stateFile 2>/dev/null`;
