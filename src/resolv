@@ -33,7 +33,7 @@ my $usage = "Usage:
     Copies $configDir/resolv.conf.CONFIG_NAME to $targetFile,
       and makes it read-only with chattr +i.
     Write CONFIG_NAME to $stateFile
-    CONFIG_NAME must be [a-z]+ {lowercase letters only}.
+    CONFIG_NAME must be [a-z0-9]+ {lowercase letters and digits only}.
     'default' is assumed if CONFIG_NAME is omitted.
 
   $0 FILE_NAME
@@ -119,7 +119,7 @@ sub applyConfigName($){
   print "resolv: applying $confName";
   if(-l $file){
     my $link = `ls -l $file`;
-    if($link =~ /-> .*resolv\.conf\.([a-z]+)/){
+    if($link =~ /-> .*resolv\.conf\.([a-z0-9]+)/){
       my $realChoice = $1;
       print " => $realChoice";
     }
@@ -132,7 +132,7 @@ sub applyConfigName($){
 sub getAvailableConfigs(){
   my @configs;
   for my $file(`ls -1 $configDir/ 2>/dev/null`){
-    push @configs, $1 if $file =~ /resolv\.conf\.([a-z]+)/;
+    push @configs, $1 if $file =~ /resolv\.conf\.([a-z0-9]+)/;
   }
   return @configs;
 }
