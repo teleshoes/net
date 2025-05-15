@@ -31,7 +31,7 @@ sub main(@){
   }
 
   runOrDie "cp", "src/bash_completion", "$bcDir/net-ssids";
-  runOrDie "chown", "root.root", "$bcDir/net-ssids";
+  runOrDie "chown", "root:root", "$bcDir/net-ssids";
   runOrDie "chmod", "644", "$bcDir/net-ssids";
 }
 
